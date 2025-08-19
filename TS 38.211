@@ -1,0 +1,1288 @@
+-[5.2.1](https://github.com/Karlyoo/LDPCinOAI/blob/CSI/CSI/3GPP%2038.214.md#521-organized-notes-channel-state-information-csi-framework)
+
+-[5.2.2](https://github.com/Karlyoo/LDPCinOAI/blob/CSI/CSI/3GPP%2038.214.md#522--channel-state-information)
+
+-[5.2.3]
+
+# CSI (channel state information)
+## TS 38.214 
+- CSI (Channel State Information): Information a UE (User Equipment, like a smartphone) sends to the base station (gNodeB) about the channel’s quality, such as signal strength or interference. This helps the base station optimize data transmission.
+- CSI-RS (Channel State Information Reference Signal): A reference signal transmitted by the base station that the UE measures to estimate channel conditions.
+- Types of CSI Reporting:
+  - Aperiodic: Triggered on-demand by the base station via DCI (Downlink Control Information).
+  - Periodic: Sent at regular intervals.
+  - Semi-persistent: Activated/deactivated by the base station and sent periodically while active.
+- Resource Settings: Configurations that define which CSI-RS resources are used for channel or interference measurements.
+- Trigger States: Predefined configurations that link CSI reporting settings with CSI-RS resources. These are activated by DCI.
+### **Simplified Explanation for Beginners**
+
+Imagine you’re using a 5G phone, and the network (base station) needs to know how good or bad the signal is at your location to send data efficiently. This is where **CSI (Channel State Information)** comes in—it’s like a report card your phone sends to the network about the signal quality. To create this report, the network sends a special signal called **CSI-RS**, which your phone measures.
+
+#### **How It Works**:
+1. **Aperiodic CSI (On-Demand Reporting)**:
+   - The network sends a command (via DCI, a kind of control message) saying, “Hey, measure the signal now and tell me how it is.”
+   - This is called **aperiodic** because it happens only when the network asks, not on a schedule.
+   - The phone measures the CSI-RS signal and sends a report back. The timing and settings (like which signal to measure) are carefully coordinated to avoid confusion.
+   - If the phone is too busy or the signal is in a different frequency band (BWP), it might skip the measurement or report.
+
+2. **Numerology (Subcarrier Spacing)**:
+   - **Numerology** is like the rhythm of the signal—how fast or slow the data is sent (e.g., 15 kHz or 30 kHz spacing).
+   - If the control message (PDCCH) and the CSI-RS use the same rhythm, the phone follows one set of rules. If they use different rhythms, the phone adjusts the timing to make sure it can process everything correctly.
+
+3. **Semi-Persistent CSI**:
+   - Instead of one-time requests, the network can say, “Keep sending reports every so often until I tell you to stop.”
+   - This is activated by a special command and stops when the network deactivates it.
+   - It’s like setting up a recurring meeting instead of a one-off call.
+
+4. **Processing Limits**:
+   - Your phone has a limited “brain” (CPUs) for calculating these reports. If the network asks for too many reports at once, the phone prioritizes the most important ones and skips the rest.
+   - Think of it like juggling—you can only handle so many balls at once!
+
+5. **QCL and Beams**:
+   - The network uses beams to send signals to your phone, like shining a flashlight in a specific direction.
+   - **QCL (Quasi Co-Location)** tells the phone which beam to expect the CSI-RS from, so it knows where to “look.”
+   - If the timing is too tight (e.g., not enough time to switch beams), the phone might use a default beam setting instead.
+## 5.2  UE procedure for reporting channel state information (CSI)
+### 5.2.1 Organized Notes: Channel State Information (CSI) Framework 
+- **Purpose**: The CSI framework allows the UE (User Equipment, e.g., a smartphone) to measure channel conditions and report them to the base station (gNodeB) to optimize data transmission.
+- **CSI Components**: 
+  - **CQI (Channel Quality Indicator)**: Indicates channel quality for data transmission.
+  - **PMI (Precoding Matrix Indicator)**: Suggests the best precoding matrix for beamforming.
+  - **CRI (CSI-RS Resource Indicator)**: Identifies the preferred CSI-RS resource.
+  - **SSBRI (SS/PBCH Block Resource Indicator)**: Identifies the preferred SS/PBCH block.
+  - **LI (Layer Indicator)**: Indicates the strongest layer in the precoding matrix.
+  - **RI (Rank Indicator)**: Indicates the number of data streams (layers) the channel can support.
+  - **L1-RSRP (Layer 1 Reference Signal Received Power)**: Measures signal strength.
+  - **L1-SINR (Layer 1 Signal-to-Interference-plus-Noise Ratio)**: Measures signal quality relative to interference and noise.
+- **Control by gNodeB**: The base station controls the time and frequency resources the UE uses for CSI reporting.
+- **Triggering**: Aperiodic CSI reports are typically triggered by DCI (Downlink Control Information) formats 0_1 or 0_2, with the latter using the parameter `reportTriggerSize-ForDCIFormat0_2`.
+
+#### 5.2.1.1 Reporting Settings 
+- Reporting settings define how and what the UE reports about the channel.
+1. **Configuration**:
+   - Each **CSI-ReportConfig** is linked to a single downlink Bandwidth Part (BWP) via `BWP-Id`.
+   - Contains parameters for:
+     - **Codebook configuration**: Defines the type of precoding (e.g., Type-I, Type-II, Enhanced Type-II) and restrictions.
+     - **Time-domain behavior**: Aperiodic, periodic, semi-persistent on PUCCH, or semi-persistent on PUSCH.
+     - **Frequency granularity**: Wideband (entire BWP) or sub-band (specific parts of the BWP).
+     - **Measurement restrictions**: Time-domain restrictions for channel or interference measurements.
+     - **Reported quantities**: CQI, PMI, CRI, SSBRI, LI, RI, L1-RSRP, or L1-SINR.
+
+2. **Time-Domain Behavior**:
+   - **Aperiodic**: Triggered on-demand by DCI.
+   - **Periodic**: Reported at fixed intervals on PUCCH.
+   - **Semi-persistent**: Activated/deactivated by DCI or MAC CE, reported periodically on PUCCH or PUSCH.
+   - For periodic/semi-persistent reporting, periodicity and slot offset are set in the numerology (subcarrier spacing) of the uplink (UL) BWP.
+
+3. **Frequency Granularity**:
+   - **Wideband**: Reports cover the entire CSI reporting band.
+   - **Sub-band**: Reports cover specific sub-bands within the BWP.
+   - Configured via `reportFreqConfiguration`, which specifies:
+     - The CSI reporting band (contiguous or non-contiguous sub-bands).
+     - Whether CQI/PMI is wideband or sub-band (via `cqi-FormatIndicator` and `pmi-FormatIndicator`).
+   - Restrictions:
+     - Sub-bands must have sufficient CSI-RS density (ports per PRB).
+     - For CSI-IM (Interference Measurement), all PRBs in a sub-band must have CSI-IM resource elements.
+
+4. **Special Case for Shared Spectrum**:
+   - In shared spectrum (unlicensed bands), the UE does not average CSI-RS measurements across different downlink transmission bursts to account for dynamic channel access.
+
+
+#### 5.2.1.2 Resource Settings 
+- Resource settings define the CSI-RS or SS/PBCH resources used for channel and interference measurements.
+1. **Configuration**:
+   - Each **CSI-ResourceConfig** includes a list of CSI Resource Sets (`csi-RS-ResourceSetList`) containing:
+     - Non-Zero Power (NZP) CSI-RS sets.
+     - SS/PBCH block sets.
+     - CSI-IM (Interference Measurement) sets.
+   - Linked to a specific DL BWP via `BWP-Id`.
+   - All resource settings linked to a CSI report setting must use the same DL BWP.
+
+2. **Time-Domain Behavior**:
+   - **Periodic/Semi-persistent**: Limited to one resource set (`S=1`).
+   - **Aperiodic**: Can have multiple resource sets.
+   - Periodicity and slot offset for periodic/semi-persistent settings are in the numerology of the DL BWP.
+
+3. **Consistency**:
+   - If multiple resource settings use the same NZP CSI-RS or CSI-IM resource ID, they must have the same time-domain behavior (aperiodic, periodic, or semi-persistent).
+   - All resource settings linked to a CSI report must have the same time-domain behavior.
+
+4. **Measurement Types**:
+   - **Channel Measurement**: Uses NZP CSI-RS or SS/PBCH blocks.
+   - **Interference Measurement**: Uses CSI-IM or NZP CSI-RS.
+   - **QCL (Quasi Co-Location)**: NZP CSI-RS for channel measurement and CSI-IM/NZP CSI-RS for interference measurement are assumed to be QCLed with respect to `QCL-TypeD` (spatial properties).
+
+5. **L1-SINR Measurement**:
+   - **One Resource Setting**: NZP CSI-RS (1 port, 3 REs/RB) for both channel and interference measurement.
+   - **Two Resource Settings**:
+     - First: Channel measurement on SSB or NZP CSI-RS.
+     - Second: Interference measurement on CSI-IM or NZP CSI-RS (1 port, 3 REs/RB).
+     - Each channel resource is paired with an interference resource.
+   - **Three Resource Settings** (optional):
+     - First: Channel measurement on SSB or NZP CSI-RS.
+     - Second: Interference measurement on CSI-IM.
+     - Third: Interference measurement on NZP CSI-RS (1 port, 3 REs/RB).
+   - QCL: The SSB or QCL-TypeD RS for channel measurement determines the QCL assumption for interference measurement resources.
+   - NZP CSI-RS resource sets for channel and interference measurement may have the `repetition` parameter set to ensure consistent beam assumptions.
+
+#### 5.2.1.4 Reporting Configurations 
+- Defines how CSI parameters are calculated and reported, including dependencies and supported combinations.
+1. **Parameter Dependencies**:
+   - **LI**: Calculated based on reported CQI, PMI, RI, and CRI.
+   - **CQI**: Calculated based on reported PMI, RI, and CRI.
+   - **PMI**: Calculated based on reported RI and CRI.
+   - **RI**: Calculated based on reported CRI.
+
+2. **Supported Configurations** (Table 5.2.1.4-1):
+   - **Periodic CSI-RS**:
+     - Periodic reporting: No dynamic triggering, configured by higher layers.
+     - Semi-persistent reporting: Activated by MAC CE (PUCCH) or DCI (PUSCH).
+     - Aperiodic reporting: Triggered by DCI, with possible subselection.
+   - **Semi-persistent CSI-RS**:
+     - No periodic reporting.
+     - Semi-persistent reporting: Activated by MAC CE (PUCCH) or DCI (PUSCH).
+     - Aperiodic reporting: Triggered by DCI.
+   - **Aperiodic CSI-RS**:
+     - Only supports aperiodic reporting, triggered by DCI.
+
+3. **CRI Reporting**:
+   - When `repetition` is `off` in an NZP CSI-RS resource set, the UE reports a CRI to select the best resource.
+   - When `repetition` is `on`, CRI is not reported (beam repetition assumed).
+   - CRI reporting is not supported for Type-II or Type-II Port Selection codebooks.
+
+4. **Periodicity for Periodic/Semi-persistent Reporting**:
+   - **PUCCH**: Periodicity (`T_CSI`) and slot offset (`offset`) are configured by `reportSlotConfig`. Reports are transmitted in slots satisfying:
+     \[
+     \left( N_{\text{slot}}^{\text{frame},\mu} \cdot n_f + n_{s,f} - \text{offset} \right) \mod T_{\text{CSI}} = 0
+     \]
+   - **PUSCH (Semi-persistent)**: Similar formula, but relative to the initial PUSCH transmission slot.
+
+5. **Slot Offsets for Aperiodic/Semi-persistent PUSCH**:
+   - Configured by `reportSlotOffsetList`, `reportSlotOffsetListForDCI-Format0-1`, or `reportSlotOffsetListForDCI-Format0-2`, selected by the triggering DCI.
+
+6. **Subband Sizes** (Table 5.2.1.4-2):
+   - Depend on BWP size:
+     - 24–72 PRBs: Subband size = 4 or 8 PRBs.
+     - 73–144 PRBs: Subband size = 8 or 16 PRBs.
+     - 145–275 PRBs: Subband size = 16 or 32 PRBs.
+   - First and last subband sizes may differ due to non-integer division of PRBs.
+
+7. **Frequency Granularity**:
+   - **Wideband**: Applies to entire reporting band.
+     - Used for `cri-RI-PMI-CQI`, `cri-RI-LI-PMI-CQI`, `cri-RI-i1`, `cri-RI-CQI`, `cri-RI-i1-CQI` (with `widebandCQI`), `cri-RSRP`, `ssb-Index-RSRP`, `cri-SINR`, or `ssb-Index-SINR`.
+   - **Sub-band**: Reports per sub-band.
+   - BWPs < 24 PRBs must use wideband granularity with Type-I Single Panel codebook.
+
+##### 5.2.1.4.1 Resource Setting Configurations 
+- Specifies how resource settings are linked to CSI reports.
+1. **Aperiodic CSI**:
+   - **One Resource Setting**: For channel measurement (L1-RSRP or L1-SINR).
+   - **Two Resource Settings**: First for channel measurement, second for interference measurement (CSI-IM or NZP CSI-RS).
+   - **Three Resource Settings**: First for channel measurement, second for CSI-IM interference, third for NZP CSI-RS interference.
+
+2. **Periodic/Semi-persistent CSI**:
+   - **One Resource Setting**: For channel measurement (L1-RSRP or L1-SINR).
+   - **Two Resource Settings**: First for channel measurement, second for interference measurement (CSI-IM or NZP CSI-RS).
+
+3. **Restrictions**:
+   - For Type-II codebooks, only one CSI-RS resource is allowed per resource set for channel measurement.
+   - Maximum 64 NZP CSI-RS/SSB resources for `reportQuantity` = `none`, `cri-RI-CQI`, `cri-RSRP`, `ssb-Index-RSRP`, `cri-SINR`, or `ssb-Index-SINR`.
+   - For CSI-IM interference measurement, each CSI-RS resource is paired with a CSI-IM resource.
+   - For NZP CSI-RS interference measurement (non-L1-SINR), only one NZP CSI-RS resource is allowed, with up to 18 ports.
+
+4. **Assumptions**:
+   - For non-L1-SINR:
+     - Each NZP CSI-RS port for interference measurement represents an interference layer.
+     - Other interference signals are assumed on CSI-RS/CSI-IM resources.
+   - For L1-SINR:
+     - Dedicated NZP CSI-RS/CSI-IM resources represent total interference and noise.
+
+##### 5.2.1.4.2 Report Quantity Configurations 
+- Defines what CSI quantities the UE reports.
+1. **Possible `reportQuantity` Values**:
+   - `none`, `cri-RI-PMI-CQI`, `cri-RI-i1`, `cri-RI-i1-CQI`, `cri-RI-CQI`, `cri-RSRP`, `cri-SINR`, `ssb-Index-RSRP`, `ssb-Index-SINR`, `cri-RI-LI-PMI-CQI`.
+
+2. **Behavior**:
+   - **None**: No report is sent.
+   - **cri-RI-PMI-CQI, cri-RI-LI-PMI-CQI**: Report precoder matrix (wideband or sub-band).
+   - **cri-RI-i1, cri-RI-i1-CQI**: Report wideband PMI (`i1`) with Type-I Single Panel codebook.
+   - **cri-RI-CQI**:
+     - Uses port indices from `non-PMI-PortIndication` (if configured) or assumes default port ordering.
+     - CQI assumes an identity matrix precoder scaled by \( \frac{1}{\sqrt{\nu}} \).
+   - **cri-RSRP, ssb-Index-RSRP, cri-SINR, ssb-Index-SINR**: Report signal strength or quality for selected resources.
+
+3. **CRI/SSBRI Derivation**:
+   - If multiple resources (\( N_S > 1 \)) are configured, CRI/SSBRI selects the \((k+1)\)-th resource, and other parameters are conditioned on the reported CRI/SSBRI.
+   - Maximum ports per CSI-RS resource: 16 (for \( N_S = 2 \)), 8 (for \( 2 < N_S \leq 8 \)).
+
+##### 5.2.1.4.3 L1-RSRP Reporting 
+- Measures signal strength for beam selection.
+1. **Resources**: CSI-RS, SS/PBCH blocks, or both, QCLed with `QCL-TypeC` (Doppler) and `QCL-TypeD` (spatial).
+2. **Configuration**: Up to 16 CSI-RS resource sets, each with up to 64 resources (total ≤ 128 resources).
+3. **Reporting**:
+   - **Single resource (`nrofReportedRS = 1`)**: 7-bit value, [-140, -44] dBm, 1 dB step.
+   - **Multiple resources or group-based reporting**: Largest RSRP is 7-bit, others are 4-bit differential (2 dB step).
+     
+##### 5.2.1.4.4 L1-SINR Reporting 
+- Measures signal quality relative to interference and noise.
+1. **Resources**:
+   - Channel: NZP CSI-RS or SS/PBCH blocks.
+   - Interference: NZP CSI-RS or CSI-IM.
+2. **Configuration**: Up to 16 resource sets, with up to 64 CSI-RS or SSB resources.
+3. **Reporting**:
+   - **Single resource (`nrofReportedRSForSINR = 1`)**: 7-bit value, [-23, 40] dB, 0.5 dB step.
+   - **Multiple resources or group-based reporting**: Largest SINR is 7-bit, others are 4-bit differential (1 dB step).
+   - Reported SINR values are not adjusted for power offsets.
+
+
+#### 5.2.1.5 Triggering/activation of CSI Reports and CSI-RS 
+##### 5.2.1.5.1 Aperiodic CSI Reporting and CSI-RS 
+- Aperiodic CSI reporting is triggered dynamically by the base station using DCI when it needs immediate channel information.
+- This section applies when the triggering PDCCH (Physical Downlink Control Channel) and the CSI-RS use the **same numerology** (subcarrier spacing, SCS).
+
+1. **Configuration**:
+   - A higher-layer parameter, `CSI-AperiodicTriggerStateList`, defines trigger states for aperiodic CSI reports and CSI-RS resources.
+   - Each trigger state can be associated with any downlink (DL) Bandwidth Part (BWP).
+   - CSI-RS resources can be configured as aperiodic, periodic, or semi-persistent via the `resourceType` parameter.
+
+2. **Triggering Mechanism**:
+   - The base station uses the **CSI request field** in DCI to trigger a CSI report.
+   - If the CSI request field is all zeros, no CSI report is requested.
+   - The number of bits in the CSI request field (`NTS`, configured by `reportTriggerSize`) determines how many trigger states can be addressed:
+     - If the number of configured trigger states is more than `2^(NTS) - 1`, a subselection mechanism maps trigger states to DCI codepoints.
+     - If fewer or equal, the DCI directly indicates the trigger state.
+   - The mapping or subselection is applied after a delay, starting from the slot after the UE sends HARQ-ACK for the PDSCH carrying the subselection indication.
+
+3. **Quasi Co-Location (QCL)**:
+   - QCL defines how CSI-RS resources are spatially related to other reference signals (e.g., SS/PBCH block or other CSI-RS).
+   - Each aperiodic CSI-RS resource is associated with a TCI-State (Transmission Configuration Indication) via `qcl-info`, which specifies QCL sources (e.g., for beamforming).
+   - If a TCI-State includes `QCL-TypeD` (spatial relation), the reference signal can be an SS/PBCH block or a periodic/semi-persistent CSI-RS in the same or different component carrier (CC)/BWP.
+
+4. **Scheduling Offset and Beam Switching**:
+   - The **scheduling offset** is the time between the last symbol of the PDCCH (carrying the DCI trigger) and the first symbol of the CSI-RS.
+   - If the offset is smaller than the UE’s reported `beamSwitchTiming` (e.g., 14, 28, or 48 symbols), the UE uses alternative QCL assumptions:
+     - If another DL signal (e.g., PDSCH or another CSI-RS) is in the same symbols, the UE applies that signal’s QCL assumption.
+     - If no other DL signal exists but a CORESET is configured, the UE uses the QCL of the CORESET with the lowest ID.
+     - If no CORESET is configured but `enableDefaultBeamForCCS` is set, the UE uses the QCL of the lowest-ID active TCI-State for PDSCH.
+   - If the offset is sufficient (≥ `beamSwitchTiming`), the UE applies the QCL assumptions from the TCI-State indicated in the DCI.
+
+5. **Restrictions**:
+   - A UE can’t receive more than one DCI with a non-zero CSI request per slot.
+   - A UE can’t be triggered to report CSI for a non-active BWP unless it supports `CSItriggerStateContainingNonactiveBWP`.
+   - If triggered for a non-active BWP, the UE skips the CSI report or measurement.
+   - Aperiodic CSI-RS must not be transmitted before the DCI that triggers it.
+
+6. **CSI-RS Triggering Offset**:
+   - Configured per resource set via `aperiodicTriggeringOffset` or `aperiodicTriggeringOffsetExt-r16`.
+   - Possible values: {0, 1, 2, ..., 15, 16, 24} slots.
+   - If no minimum scheduling offset is configured and QCL-TypeD is not used, the offset is fixed at 0.
+   - The offset for CSI-IM (Interference Measurement) follows the offset of the associated NZP (Non-Zero Power) CSI-RS.
+
+7. **BWP Switching**:
+   - If the active DL BWP changes between the DCI trigger and CSI-RS reception, the DCI for BWP switching must not end later than the DCI for CSI triggering.
+   - No additional BWP switching is allowed between the CSI trigger and the CSI-RS.
+
+##### 5.2.1.5.1a Aperiodic CSI Reporting with Different Numerologies 
+- This section extends the rules for aperiodic CSI reporting when the PDCCH and CSI-RS use **different numerologies** (different subcarrier spacings, e.g., 15 kHz vs. 30 kHz).
+1. **Beam Switching Timing**:
+   - The scheduling offset is measured in **CSI-RS symbols** instead of slots.
+   - If the PDCCH has a smaller SCS (µ_PDCCH < µ_CSIRS), an additional delay `d` (from Table 5.2.1.5.1a-1) is added to the `beamSwitchTiming`:
+     - µ_PDCCH = 0: d = 8 PDCCH symbols
+     - µ_PDCCH = 1: d = 8 PDCCH symbols
+     - µ_PDCCH = 2: d = 14 PDCCH symbols
+   - If the offset is less than `beamSwitchTiming + d · 2^(µ_PDCCH/µ_CSIRS)`, the UE uses alternative QCL assumptions (same as Section 5.2.1.5.1).
+   - If the offset is sufficient, the UE applies the TCI-State’s QCL assumptions.
+
+2. **CSI-RS Triggering Offset**:
+   - The offset is configured as {0, 1, ..., 31} slots if µ_PDCCH < µ_CSIRS, or {0, 1, ..., 15, 16, 24} slots if µ_PDCCH > µ_CSIRS.
+   - The CSI-RS is transmitted in a slot calculated based on the numerology of both PDCCH and CSI-RS, accounting for carrier aggregation slot offsets (`ca-SlotOffset`).
+
+3. **Measurement Timing**:
+   - If µ_PDCCH < µ_CSIRS, the CSI-RS must start at least `Ncsirs` PDCCH symbols after the end of the triggering PDCCH (values from Table 5.2.1.5.1a):
+     - µ_PDCCH = 0: Ncsirs = 4 symbols
+     - µ_PDCCH = 1: Ncsirs = 5 symbols
+     - µ_PDCCH = 2: Ncsirs = 10 symbols
+     - µ_PDCCH = 3: Ncsirs = 14 symbols
+   - If µ_PDCCH > µ_CSIRS, the same rule applies but without the additional delay `d`.
+
+##### 5.2.1.5.2 Semi-Persistent CSI and CSI-RS
+- Semi-persistent CSI reporting or CSI-RS is activated/deactivated by the base station and operates periodically until deactivated.
+1. **Semi-Persistent Reporting on PUSCH**:
+   - Configured via `CSI-SemiPersistentOnPUSCH-TriggerStateList`.
+   - Activated by DCI scrambled with SP-CSI-RNTI (Semi-Persistent CSI Radio Network Temporary Identifier).
+   - A UE can’t have two semi-persistent CSI reports with the same `CSI-ReportConfigId` active simultaneously.
+
+2. **Semi-Persistent Reporting on PUCCH**:
+   - Configured via `reportConfigType`.
+   - Activated by a MAC CE (Medium Access Control Control Element) as per TS 38.321.
+   - The reporting starts after a delay from the slot where the UE sends HARQ-ACK for the PDSCH carrying the activation command.
+
+3. **Semi-Persistent CSI-RS**:
+   - Activated/deactivated via MAC CE.
+   - QCL assumptions are provided via TCI-States, similar to aperiodic CSI-RS.
+   - Active when the associated DL BWP is active; otherwise, suspended.
+
+4. **Validation of Activation/Deactivation**:
+   - DCI for activation/deactivation must use SP-CSI-RNTI and meet specific field settings (e.g., HARQ process number set to all 0s).
+   - Deactivation DCI also sets modulation and coding scheme to all 1s and resource block assignment based on resource allocation type.
+
+5. **Carrier Deactivation**:
+   - If a carrier is deactivated, all semi-persistent configurations (CSI-RS, CSI reporting, SRS, ZP CSI-RS) are deactivated and need re-activation.
+
+#### 5.2.1.6 CSI Processing Criteria 
+- The UE has limited processing capabilities for CSI calculations, defined by the number of **CSI Processing Units (CPUs)** it supports.
+1. **CSI Processing Units (CPUs)**:
+   - A UE supports `N` simultaneous CSI calculations (CPUs).
+   - If `L` CPUs are occupied, `N - L` are available.
+   - If more CSI reports are triggered than available CPUs, the UE prioritizes reports based on Clause 5.2.5, dropping the lowest-priority reports.
+
+2. **CPU Occupancy**:
+   - Depends on the type of CSI report:
+     - **ReportQuantity = 'none' with trs-Info**: 0 CPUs.
+     - **ReportQuantity = 'cri-RSRP', 'ssb-Index-RSRP', 'cri-SINR', 'ssb-Index-SINR', or 'none' (no trs-Info)**: 1 CPU.
+     - **Complex reports (e.g., cri-RI-PMI-CQI)**:
+       - If simple (wideband, ≤4 CSI-RS ports, Type I codebook), occupies `N` CPUs.
+       - Otherwise, occupies as many CPUs as the number of CSI-RS resources in the resource set.
+   - **Duration of CPU Occupancy**:
+     - **Periodic/Semi-persistent reports**: From the earliest CSI-RS/CSI-IM/SSB occasion to the last symbol of the PUSCH/PUCCH carrying the report.
+     - **Aperiodic reports**: From the first symbol after the triggering PDCCH to the last symbol of the PUSCH carrying the report.
+     - **L1-RSRP reports**: Specific durations based on measurement and reporting timing.
+
+3. **Resource Limits**:
+   - A UE can’t have more active CSI-RS ports or resources than its reported capability.
+   - Aperiodic CSI-RS is active from the end of the triggering PDCCH to the end of the PUSCH carrying the report.
+   - Semi-persistent CSI-RS is active from activation to deactivation.
+   - Periodic CSI-RS is active from configuration to release.
+
+### 5.2.2  Channel state information
+#### 5.2.2.1  Channel quality indicator (CQI)
+- Indicates the downlink channel quality and is used by the gNB to determine the modulation and coding scheme (MCS).
+- Based on the channel quality measured from the CSI-RS, using the corresponding modulation + code rate + TBS, the PDSCH transport block error rate (TBLER) must not exceed the following thresholds:
+  - Table 1 or Table 2: TBLER ≤ 0.1 
+  - Table 3: TBLER ≤ 0.00001 (very strict, primarily used in high-reliability eMBB/mMTC scenarios)
+    
+TABLE 1:
+
+| CQI index | Modulation | Code rate (x1024) | Spectral Efficiency |
+| --------- | ---------- | ----------------- | ------------------- |
+| 0         | -          | -                 | out of range        |
+| 1–6       | QPSK       | 78–602            | 0.15–1.18           |
+| 7–9       | 16QAM      | 378–616           | 1.48–2.41           |
+| 10–15     | 64QAM      | 466–948           | 2.73–5.55           |
+
+TABLE 2:
+| CQI index | Modulation | Code rate | Efficiency |
+| --------- | ---------- | --------- | ---------- |
+| 0         | -          | -         | -          |
+| 1–3       | QPSK       |           |            |
+| 4–6       | 16QAM      |           |            |
+| 7–11      | 64QAM      |           |            |
+| 12–15     | 256QAM     | 711–948   | 5.55–7.41  |
+
+TABLE 3:
+| CQI index | Modulation | Code rate | Efficiency |
+| --------- | ---------- | --------- | ---------- |
+| 0         | -          | -         | -          |
+| 1–8       | QPSK       | 30–602    | 0.06–1.18  |
+| 9–11      | 16QAM      | 378–616   | 1.48–2.41  |
+| 12–15     | 64QAM      | 466–772   | 2.73–4.52  |
+
+```
+           +--------------------+
+           | Downlink CSI-RS    |
+           | (channel estimate) |
+           +---------+----------+
+                     |
+                     v
+           +----------------------------------------+
+           | UE calculate CQI index                 |
+           | Accoding to the code rate / TBLER       |
+           |to choose the proper modulation(qpsk...)|
+           +----------------------------------------+
+                     |
+                     v
+           | return CQI to  gNB (uplink)|
+
+```
+#### 5.2.2.2 Precoding matrix indicator (PMI)
+- The Precoding Matrix Indicator (PMI) is a parameter used by the UE (user equipment) in its CSI report to indicate the optimal precoding matrix to the gNodeB (5G base station). Precoding matrices are used in MIMO (Multiple Input Multiple Output) systems to optimize signal transmission and improve data rates or reliability by selecting the appropriate precoding matrix.
+##### 5.2.2.2.1 Type I Single-Panel Codebook
+- The Type I Single-Panel Codebook, defined in 3GPP 5G NR, is a set of precoding matrices suitable for single-panel antenna arrays. This codebook provides standardized precoding matrices for different numbers of antenna ports (2, 4, 8, 12, 16, 24, and 32) and layers (1 to 8). The UE selects the most appropriate precoding matrix based on measured channel conditions and provides feedback to the base station via the PMI.
+  
+**PMI Configuration for 2 Antenna Ports ({3000, 3001})**
+1. Configuration Parameters
+  - Codebook Type: The UE is configured via the higher-layer parameter codebookType as 'typeI-SinglePanel'.
+  - Restriction Bitmap: The higher-layer parameter twoTX-CodebookSubsetRestriction is a 6-bit bitmap (bit sequence) represented as a5, a4, a3, a2, a1, a0, where:
+    - a0 is the least significant bit (LSB) and a5 is the most significant bit (MSB).
+    - Bits a0 to a3 correspond to codebook indices 0 to 3 for single-layer (ν=1) transmission.
+    - Bits a4 and a5 correspond to codebook indices 0 and 1 for two-layer (ν=2) transmission.
+    - A bit value of 0 indicates that the UE is prohibited from reporting the PMI associated with the corresponding precoding matrix.
+2. Codebook (Table 5.2.2.2.1-1)
+- Table 5.2.2.2.1-1 defines the codebook for CSI reporting with 2 antenna ports in both single-layer and two-layer cases, specifically as follows:
+  - Single layer (ν=1):
+    - Codebook index 0: (1/√2) [1, 1]^T
+    - Codebook index 1: (1/√2) [1, j]^T
+    - Codebook index 2: (1/√2) [1, -1]^T
+    - Codebook index 3: (1/√2) [1, -j]^T
+  - Two layers (ν=2):
+    - Codebook index 0: (1/√2) [[1, 1], [1, -1]]
+    -  Codebook index 1: (1/√2) [[1, 1], [j, -j]]
+**PMI Configuration for 4~32 Antenna Ports ({3000, 3001... 3031})**
+  1. Codebook Type:  Also configured as 'typeI-SinglePanel'.
+- Number of Layers:
+  - For 1 layer (ν = 1), the PMI consists of three codebook indices: i1_1, i1_2, i2.
+  - For 2 to 4 layers (ν in {2, 3, 4}), the PMI consists of four codebook indices: i1_1, i1_2, i1_3, i2.
+  - For 5 to 8 layers (ν in {5, 6, 7, 8}), the PMI structure is more complex and involves multiple index combinations.
+- Composite Codebook Index:
+  
+<img width="384" height="94" alt="image" src="https://github.com/user-attachments/assets/c1ff6a5d-6642-4fcf-b243-34e005d8999c" />
+
+- Number of Antenna Ports:
+  - Determined by PCSI-RS = 2 * N1 * N2, where N1 and N2 are the number of rows and columns in the antenna array, configured via higher-layer parameters n1 and n2.
+- Restriction Bitmap:
+  - The n1-n2 bitmap is defined as a sequence a_{Ac-1}, ..., a1, a0, where Ac = N1 * O1 * N2 * O2. This bitmap restricts the available precoding matrices.
+  - For v in {3, 4} and PCSI-RS = 16, 24, or 32, the mapping between bits and precoders becomes more complex, involving multiple index associations.
+- Layer Restriction:
+  - The 8-bit bitmap typeI-SinglePanel-ri-Restriction (r7, ..., r0) limits the PMI and RI reports. When bit r_i = 0, reporting of precoders associated with nu = i + 1 layers is prohibited.
+- CQI Computation Restriction:
+  - When reportQuantity is set to 'cri-RI-i1-CQI', the bitmap typeI-SinglePanel-codebookSubsetRestriction-i2 restricts the randomly selected precoder used for CQI calculation.
+
+2. Codebook Structure
+- The codebook is defined in Tables 5.2.2.2.1-5 to 5.2.2.2.1-12, with separate structures for 1 to 8 layers, as described below:
+  - 1 Layer (Table 5.2.2.2.1-5):
+     - The PMI consists of indices i1_1, i1_2, i2.
+     - The precoding matrix is in the form:
+
+<img width="287" height="77" alt="image" src="https://github.com/user-attachments/assets/3c9c8f6c-1e2e-4d2e-8e0b-5a185e56a6a2" />
+ 
+     - v_{l,m} is the beam selection vector based on N1, N2, O1, O2
+     - phi_n = exp(j * pi * n / 2) is the phase coefficient
+
+  - 2 Layers (Table 5.2.2.2.1-6):
+      - Supports two modes (codebookMode = 1 or 2).
+      - The precoding matrix is:
+
+<img width="439" height="87" alt="image" src="https://github.com/user-attachments/assets/6d488f78-fef6-4253-abc7-5cca667b5229" />
+
+      - Where k1 and k2 are derived from i1_3 (see Table 5.2.2.2.1-3).
+
+- 3 to 4 Layers (Tables 5.2.2.2.1-7, 5.2.2.2.1-8):
+  - Different structures are defined depending on whether PCSI-RS < 16 or >= 16. These include more beam and phase combinations.
+  - For example, a 4-layer codebook may look like:
+
+<img width="621" height="89" alt="image" src="https://github.com/user-attachments/assets/30e8e36b-c774-453e-8e7a-3d479985e719" />
+
+- 5 to 8 Layers (Tables 5.2.2.2.1-9 to 5.2.2.2.1-12):
+  - For higher layer numbers, the codebook includes more beam combinations and phase adjustments, suitable for large-scale MIMO scenarios.
+
+3. Parameter Definitions
+- Beam Selection Parameters:
+
+<img width="476" height="213" alt="image" src="https://github.com/user-attachments/assets/34ef7f3a-6dad-47be-ba77-fc7197805150" />
+
+- Antenna Port Configurations:
+  - Table 5.2.2.2.1-2 defines supported combinations of (N1, N2) and (O1, O2). For example:
+  - 4 ports: (N1, N2) = (2,1), (O1, O2) = (4,1)
+  - 32 ports: (N1, N2) = (4,4), (8,2), (16,1)
+##### 5.2.2.2.2 Type I Multi-Panel Codebook
+- **Purpose**: Defines the Type I Multi-Panel Codebook for CSI reporting, used for precoding matrix indicator (PMI) and rank indicator (RI) reporting with multiple antenna panels.
+- **Antenna Ports**: Supports 8, 16, or 32 CSI-RS antenna ports:
+  - 8 ports: {3000, 3001, …, 3007}
+  - 16 ports: {3000, 3001, …, 3015}
+  - 32 ports: {3000, 3001, …, 3031}
+- **Configuration**: Enabled when the higher-layer parameter `codebookType` is set to `'typeI-MultiPanel'`.
+
+## Key Parameters
+1. **Panel and Antenna Configuration**:
+   - Configured via higher-layer parameter `ng-n1-n2`, defining:
+     - **Ng**: Number of antenna panels.
+     - **N1**: Number of antenna elements in the first dimension (horizontal).
+     - **N2**: Number of antenna elements in the second dimension (vertical).
+   - Number of CSI-RS ports: **PCSI-RS = 2 × Ng × N1 × N2**.
+   - Supported configurations and oversampling factors (O1, O2) are listed in **Table 5.2.2.2.2-1**.
+
+2. **Table 5.2.2.2.2-1: Supported Configurations**
+   | **PCSI-RS** | **(Ng, N1, N2)** | **(O1, O2)** |
+   |-------------|-------------------|--------------|
+   | 8           | (2, 2, 1)        | (4, 1)      |
+   | 16          | (2, 4, 1)        | (4, 1)      |
+   | 16          | (4, 2, 1)        | (4, 1)      |
+   | 16          | (2, 2, 2)        | (4, 4)      |
+   | 32          | (2, 8, 1)        | (4, 1)      |
+   | 32          | (4, 4, 1)        | (4, 1)      |
+   | 32          | (2, 4, 2)        | (4, 4)      |
+   | 32          | (4, 2, 2)        | (4, 4)      |
+
+3. **Codebook Modes**:
+   - **Ng = 2**: `codebookMode` can be set to `'1'` or `'2'`.
+   - **Ng = 4**: `codebookMode` must be set to `'1'`.
+
+4. **Bitmap Parameters**:
+   - **ng-n1-n2**:
+     - Forms a bit sequence **a0, a1, ..., aAc-1** (LSB: a0, MSB: aAc-1).
+     - **Ac = N1 × O1 × N2 × O2**: Total number of bits.
+     - Bit **a_m + l*N2*O2** corresponds to precoders based on **v_l,m** (l = 0 to N1*O1-1, m = 0 to N2*O2-1).
+     - Bit value **0** prohibits PMI reporting for associated precoders.
+   - **ri-Restriction**:
+     - Forms a bit sequence **r0, r1, r2, r3** (LSB: r0, MSB: r3).
+     - If **ri = 0** (i ∈ {0, 1, 2, 3}), PMI and RI reporting are prohibited for precoders with **υ = i + 1** layers.
+
+5. **PMI Indices**:
+   - PMI is represented by indices **i1** and **i2**, where:
+     - **i1 = [i1,1, i1,2, i1,3, i1,4]** for 2, 3, or 4 layers.
+     - **i1 = [i1,1, i1,2, i1,4]** for 1 layer.
+     - **υ** is the associated RI value (number of layers).
+   - For **codebookMode = '1'**:
+     - **i1,4** = [i1,4,1] (Ng = 2) or [i1,4,1, i1,4,2, i1,4,3] (Ng = 4).
+   - For **codebookMode = '2'** (Ng = 2):
+     - **i1,4 = [i1,4,1, i1,4,2]** and **i2 = [i2,0, i2,1, i2,2]**.
+   - **i2,1 Restriction**: UE uses **i2,1 = 0** and does not report **i2,1** if **N2 = 1**.
+
+6. **Mapping for i1,3**:
+   - For 2-layer reporting: Mapping of **i1,3** to **k1** and **k2** is given in **Table 5.2.2.2.1-3**.
+   - For 3-layer and 4-layer reporting: Mapping of **i1,3** to **k1** and **k2** is given in **Table 5.2.2.2.2-2**.
+
+7. **Table 5.2.2.2.2-2: Mapping of i1,3 to k1 and k2 (3-layer and 4-layer CSI reporting)**
+   | **i1,3** | **N1=2, N2=1** | **N1=2, N2=2** | **N1=4, N2=1** | **N1=8, N2=1** | **N1=2, N2=2** | **N1=4, N2=2** |
+   |----------|----------------|----------------|----------------|----------------|----------------|----------------|
+   |          | k1, k2         | k1, k2         | k1, k2         | k1, k2         | k1, k2         | k1, k2         |
+   | 0        | O1, 0          | O1, 0          | O1, 0          | O1, 0          | O1, 0          | O1, 0          |
+   | 1        | 2O1, 0         | 2O1, 0         | 2O1, 0         | 2O1, 0         | O2, 0          | O2, 0          |
+   | 2        | 3O1, 0         | 3O1, 0         | 3O1, 0         | O1, O2         | O1, O2         | O1, O2         |
+   | 3        | 4O1, 0         | 2O1, 0         | -              | -              | -              | -              |
+
+## Codebook Elements
+- **Quantities Used**:
+  - **φ_n**: Phase shift, defined as **e^(jπn/2)**.
+  - **p_a**: Power scaling, defined as **e^(jπp/2)** or **e^(-jπp/2)** based on Ng.
+  - **n_b**: Beam index.
+  - **u_m**: Beamforming vector in the second dimension.
+  - **v_l,m**: Beamforming vector for indices l, m, defined as:
+    - **u_m = [1, e^(j2πm/(O2*N2)), ..., e^(j2πm(N2-1)/(O2*N2))]ᵀ / √N2** (if N2 > 1).
+    - **u_m = 1** (if N2 = 1).
+    - **v_l,m = [u_m, e^(j2πl/(O1*N1))u_m, ..., e^(j2πl(N1-1)/(O1*N1))u_m]ᵀ / √N1**.
+- **Precoder Matrices**:
+  - For **Ng = 2 or 4, codebookMode = 1**:
+    - **W_l,m,p,n^(1,Ng)**: Combines beamforming vectors **v_l,m** with phase shifts **φ_n** and power scaling **p**, scaled by **1/√(PCSI-RS)**.
+  - For **Ng = 2, codebookMode = 2**:
+    - **W_l,m,p,n^(2,Ng)**: Similar structure but includes additional parameters **a** and **b** for beam combinations.
+  - Detailed formulas for **W_l,m,p,n^(1,Ng)** and **W_l,m,p,n^(2,Ng)** are provided for Ng = 2 and Ng = 4.
+
+## Codebooks for 1-4 Layers
+- Defined in **Tables 5.2.2.2.2-3 to 5.2.2.2.2-6** for 1, 2, 3, and 4 layers, respectively.
+- **Table 5.2.2.2.2-3: 1-layer CSI Reporting**:
+  - **codebookMode = 1 (Ng = 2 or 4)**:
+    - Indices: **i1,1**, **i1,2** (0 to N1*O1-1, 0 to N2*O2-1), **i1,4,q** (0 to 3), **i2** (0 or 1).
+    - Precoder: **W_i1,1,i1,2,i1,4,i2^(1) = W_l,m,p,n^(1,Ng)**.
+  - **codebookMode = 2 (Ng = 2)**:
+    - Indices: **i1,1**, **i1,2**, **i1,4,q** (0 to 3), **i2,0**, **i2,q** (0 or 1).
+    - Precoder: **W_i1,1,i1,2,i1,4,i2^(1) = W_l,m,p,n^(2,Ng)**.
+- **Table 5.2.2.2.2-4: 2-layer CSI Reporting**:
+  - **codebookMode = 1 (Ng = 2 or 4)**:
+    - Indices: **i1,1**, **i1,2**, **i1,4,q**, **i2**.
+    - Precoder: **W_i1,1,i1,1+k1,i1,2,i1,2+k2,i1,4,i2^(2)** combines **W_l,m,p,n^(1,Ng)** and **W_l',m',p,n^(1,Ng)**.
+  - **codebookMode = 2 (Ng = 2)**:
+    - Same indices, precoder uses **W_l,m,p,n^(2,Ng)** and **W_l',m',p,n^(2,Ng)**.
+  - Mapping from **i1,3** to **k1, k2** per Table 5.2.2.2.1-3.
+- **Table 5.2.2.2.2-5: 3-layer CSI Reporting**:
+  - Similar structure to 2-layer, using **W_l,m,p,n^(1,Ng)** or **W_l,m,p,n^(2,Ng)** for three precoders.
+  - Mapping from **i1,3** to **k1, k2** per Table 5.2.2.2.2-2.
+- **Table 5.2.2.2.2-6: 4-layer CSI Reporting**:
+  - Similar structure, combining four precoders.
+  - Mapping from **i1,3** to **k1, k2** per Table 5.2.2.2.2-2.
+
+
+### 5.2.2.2.3 Type II Codebook
+- **Purpose**: Defines the Type II Codebook for CSI reporting, used for precoding matrix indicator (PMI) and rank indicator (RI) reporting with high-resolution beamforming.
+- **Antenna Ports**: Supports 4, 8, 12, 16, 24, or 32 CSI-RS antenna ports:
+  - 4 ports: {3000, 3001, …, 3003}
+  - 8 ports: {3000, 3001, …, 3007}
+  - 12 ports: {3000, 3001, …, 3011}
+  - 16 ports: {3000, 3001, …, 3015}
+  - 24 ports: {3000, 3001, …, 3023}
+  - 32 ports: {3000, 3001, …, 3031}
+- **Configuration**: Enabled when the higher-layer parameter `codebookType` is set to `'typeII'`.
+
+#### Key Parameters
+1. **Antenna Configuration**:
+   - Configured via higher-layer parameter `n1-n2-codebookSubsetRestriction`, defining:
+     - **N1**: Number of antenna elements in the first dimension (horizontal).
+     - **N2**: Number of antenna elements in the second dimension (vertical).
+   - Number of CSI-RS ports: **PCSI-RS = 2 × N1 × N2**.
+   - Supported configurations and oversampling factors (O1, O2) are listed in **Table 5.2.2.2.1-2**.
+
+2. **Number of Beams (L)**:
+   - Configured via higher-layer parameter `numberOfBeams`.
+   - **L = 2** when PCSI-RS = 4.
+   - **L ∈ {2, 3, 4}** when PCSI-RS > 4.
+
+3. **Phase Alphabet Size (NPSK)**:
+   - Configured via higher-layer parameter `phaseAlphabetSize`.
+   - **NPSK ∈ {4, 8}** (determines the granularity of phase coefficients).
+
+4. **Subband Amplitude**:
+   - Configured via higher-layer parameter `subbandAmplitude`:
+     - `'true'`: Enables subband-specific amplitude coefficients.
+     - `'false'`: Disables subband-specific amplitude coefficients.
+
+5. **RI Restriction**:
+   - UE shall not report **RI > 2** (maximum 2 layers).
+   - Bitmap parameter `typeII-RI-Restriction` forms a bit sequence **r0, r1** (LSB: r0, MSB: r1).
+     - If **ri = 0** (i ∈ {0, 1}), PMI and RI reporting are prohibited for precoders with **υ = i + 1** layers.
+
+#### PMI Indices
+- Each PMI corresponds to indices **i1** and **i2**, where **υ** is the associated RI value (1 or 2 layers).
+- **i1**:
+  - **υ = 1**: **i1 = [i1,1, i1,2, i1,3,1, i1,4,1]**.
+  - **υ = 2**: **i1 = [i1,1, i1,2, i1,3,1, i1,4,1, i1,3,2, i1,4,2]**.
+- **i2**:
+  - When `subbandAmplitude = 'false'`, **υ = 1**: **i2 = [i2,1,1]**; **υ = 2**: **i2 = [i2,1,1, i2,1,2]**.
+  - When `subbandAmplitude = 'true'`, **υ = 1**: **i2 = [i2,1,1, i2,2,1]**; **υ = 2**: **i2 = [i2,1,1, i2,2,1, i2,1,2, i2,2,2]**.
+
+#### Beam Selection
+- **L vectors** are identified by indices **i1,1** and **i1,2**:
+  - **i1,1 = [q1⁽⁰⁾, q1⁽¹⁾, ..., q1⁽L-1⁾]**, where **q1 ∈ {0, 1, ..., O1-1}**.
+  - **i1,2 = [q2⁽⁰⁾, q2⁽¹⁾, ..., q2⁽L-1⁾]**, where **q2 ∈ {0, 1, ..., O2-1}**.
+  - **i1,2 ∈ {0, 1, ..., C(N1N2, L)-1}**, where **C(x, y)** is the combinatorial coefficient from **Table 5.2.2.2.3-1**.
+- Beam indices **n1** and **n2**:
+  - **n1 = [n1⁽⁰⁾, n1⁽¹⁾, ..., n1⁽L-1⁾]**, **n1⁽i⁾ ∈ {0, 1, ..., N1-1}**.
+  - **n2 = [n2⁽⁰⁾, n2⁽¹⁾, ..., n2⁽L-1⁾]**, **n2⁽i⁾ ∈ {0, 1, ..., N2-1}**.
+- **Algorithm for n1, n2 from i1,2**:
+  - Initialize **s-1 = 0**.
+  - For **i = 0 to L-1**:
+    - Find the largest **x ∈ {0, 1, ..., N1N2-(L-i)-1}** such that **i1,2 ≥ s + C(x, L-i)**.
+    - Compute **e = i1,2 - s - C(x, L-i)**.
+    - Update **s = s + e**.
+    - **n1⁽i⁾ = floor(x / N2)**, **n2⁽i⁾ = x mod N2**.
+  - Indices are assigned such that **n⁽i⁾ = n1⁽i⁾N2 + n2⁽i⁾** increases with **i**.
+- **Reverse mapping for i1,2**:
+  - **i1,2 = Σ C(N1N2 - n⁽i⁾, L-i)** (sum from i = 0 to L-1).
+- **Special Cases**:
+  - If **N2 = 1**: **q2 = 0**, **n2⁽i⁾ = 0** for all i, and **i1,2** is not reported.
+  - If **(N1, N2) = (2, 1)**: **n1 = [0, 1]**, **n2 = [0, 0]**, **i1,2** not reported.
+  - If **(N1, N2) = (4, 1), L = 4**: **n1 = [0, 1, 2, 3]**, **n2 = [0, 0, 0, 0]**, **i1,2** not reported.
+  - If **(N1, N2) = (2, 2), L = 4**: **n1 = [0, 1, 0, 1]**, **n2 = [0, 0, 1, 1]**, **i1,2** not reported.
+
+#### Amplitude and Phase Coefficients
+- **Strongest Coefficient**:
+  - Identified by **i1,3,l ∈ {0, 1, ..., 2L-1}** for layer **l** (l = 1 to υ).
+- **Amplitude Coefficient Indicators**:
+  - **i1,4,l = [k_l,0⁽¹⁾, k_l,1⁽¹⁾, ..., k_l,2L-1⁽¹⁾]**, **k_l,i⁽¹⁾ ∈ {0, 1, ..., 7}**.
+  - **i2,2,l = [k_l,0⁽²⁾, k_l,1⁽²⁾, ..., k_l,2L-1⁽²⁾]**, **k_l,i⁽²⁾ ∈ {0, 1}** (when `subbandAmplitude = 'true'`).
+  - Mapping of **k_l,i⁽¹⁾** to amplitude **p_l,i⁽¹⁾** (Table 5.2.2.2.3-2):
+    | **k_l,i⁽¹⁾** | **p_l,i⁽¹⁾** |
+    |--------------|--------------|
+    | 0            | 0            |
+    | 1            | 1/64         |
+    | 2            | 1/32         |
+    | 3            | 1/16         |
+    | 4            | 1/8          |
+    | 5            | 1/4          |
+    | 6            | 1/2          |
+    | 7            | 1            |
+  - Mapping of **k_l,i⁽²⁾** to amplitude **p_l,i⁽²⁾** (Table 5.2.2.2.3-3):
+    | **k_l,i⁽²⁾** | **p_l,i⁽²⁾** |
+    |--------------|--------------|
+    | 0            | 1/2          |
+    | 1            | 1            |
+- **Phase Coefficient Indicators**:
+  - **i2,1,l = [c_l,0, c_l,1, ..., c_l,2L-1]**, **c_l,i ∈ {0, 1, ..., NPSK-1}**.
+- **Reporting Rules**:
+  - Strongest coefficient (**i1,3,l**): **k_l,i1,3,l⁽¹⁾ = 7**, **k_l,i1,3,l⁽²⁾ = 1**, **c_l,i1,3,l = 0** (not reported).
+  - Remaining **2L-1** elements of **i1,4,l** are reported, where **k_l,i⁽¹⁾ > 0** for **Ml** coefficients.
+  - When `subbandAmplitude = 'false'`:
+    - **k_l,i⁽²⁾ = 1** for all i, **i2,2,l** not reported.
+    - **i2,1,l** reported for coefficients with **k_l,i⁽¹⁾ > 0** (excluding i1,3,l), others set to **c_l,i = 0**.
+  - When `subbandAmplitude = 'true'`:
+    - Report **i2,2,l** and **i2,1,l** for the **min(Ml, K⁽²⁾)-1** strongest coefficients (excluding i1,3,l).
+    - **K⁽²⁾** (Table 5.2.2.2.3-4): **L = 2: 4**, **L = 3: 4**, **L = 4: 6**.
+    - Report **i2,1,l** for **min(Ml, M-Ml)** weakest non-zero coefficients with **c_l,i ∈ {0, 1, 2, 3}**.
+    - Remaining **2L-Ml** elements of **i2,1,l** set to **c_l,i = 0**, **i2,2,l** set to **k_l,i⁽²⁾ = 1**.
+  - If two elements of **i1,4,l** are identical, prioritize the lower index for the strongest coefficient set.
+
+#### Codebook Definition
+- **Table 5.2.2.2.3-5: Codebook for 1-layer and 2-layer CSI Reporting**:
+  - **1-layer (υ = 1)**:
+    - **W_q1,q2,n1,n2,p⁽¹⁾,p⁽²⁾,i2,1,1⁽¹⁾ = W_q1,q2,n1,n2,p⁽¹⁾,p⁽²⁾,i2,1,1 / √(2Σ p_l,i⁽¹⁾p_l,i⁽²⁾)**.
+  - **2-layer (υ = 2)**:
+    - Combines two precoders: **W⁽²⁾ = [W_q1,q2,n1,n2,p⁽¹⁾,p⁽²⁾,i2,1,1 / √2, W_q1,q2,n1,n2,p⁽¹⁾,p⁽²⁾,i2,1,2 / √2]**.
+  - **Precoder Formula**:
+    - **W_q1,q2,n1,n2,p⁽¹⁾,p⁽²⁾,i2,1,l = Σ (v_m1⁽i⁾,m2⁽i⁾ p_l,i⁽¹⁾ p_l,i⁽²⁾ φ_l,i)** (sum over i = 0 to L-1).
+    - **m1⁽i⁾ = O1n1⁽i⁾ + q1⁽i⁾**, **m2⁽i⁾ = O2n2⁽i⁾ + q2⁽i⁾**.
+    - **φ_l,i = e^(jπc_l,i / NPSK)** (phase coefficient).
+    - **v_m1,m2 = [u_m2, e^(j2πm1/(O1N1))u_m2, ..., e^(j2πm1(N1-1)/(O1N1))u_m2]ᵀ / √N1**.
+    - **u_m2 = [1, e^(j2πm2/(O2N2)), ..., e^(j2πm2(N2-1)/(O2N2))]ᵀ / √N2** (if N2 > 1, else u_m2 = 1).
+
+#### Codebook Subset Restriction
+- **Bitmap Parameter**: `n1-n2-codebookSubsetRestriction` forms **B = B1B2**.
+- **Vector Groups**:
+  - Defined as **G(r1, r2) = v_r1N1+x, r2N2+x** for **x = 0 to min(N1, N2)-1**, **r1 ∈ {0, 1, ..., O1-1}**, **r2 ∈ {0, 1, ..., O2-1}**.
+  - UE configured with restrictions for 4 vector groups **G(r1⁽k⁾, r2⁽k⁾)**, identified by group indices **g⁽k⁾ = r1⁽k⁾O2 + r2⁽k⁾** (k = 0 to 3).
+- **B1** (when N2 > 1):
+  - Binary representation of **β1 = Σ C(O1O2 - g⁽k⁾, 4-k)** (sum over k = 0 to 3).
+  - Algorithm to derive **g⁽k⁾**, **r1⁽k⁾**, **r2⁽k⁾** from **β1** (similar to beam selection algorithm).
+  - If **N2 = 1**, **g⁽k⁾ = k**, **B1** is empty.
+- **B2**:
+  - Concatenation of **B2⁽k⁾** for k = 0 to 3, where **B2⁽k⁾ = [b_2N1N2-2,x⁽k⁾, b_2N1N2-1,x⁽k⁾]**.
+  - Bits indicate maximum allowed amplitude **p_l,i⁽¹⁾** for vectors in group **g⁽k⁾** (Table 5.2.2.2.3-6):
+    | **Bits (b_2N1N2-2,x⁽k⁾, b_2N1N2-1,x⁽k⁾)** | **Max p_l,i⁽¹⁾** |
+    |-----------------------------------------|------------------|
+    | 00                                      | 0                |
+    | 01                                      | 1/4              |
+    | 10                                      | 1/2              |
+    | 11                                      | 1                |
+  - UE not supporting `amplitudeSubsetRestriction` cannot be configured with **b_2N1N2-2,x⁽k⁾, b_2N1N2-1,x⁽k⁾ = 01 or 10**.
+
+Below is a concise and organized set of notes based on the provided text from **3GPP TS 38.214, Section 5.2.2.2.4** regarding the **Type II Port Selection Codebook** for CSI reporting. The notes summarize key configurations, parameters, and codebook definitions for antenna ports and layers, structured for clarity and ease of understanding.
+
+---
+
+### 5.2.2.2.4 Type II Port Selection Codebook  
+- **Purpose**: Defines the Type II Port Selection Codebook for CSI reporting, used for precoding matrix indicator (PMI) and rank indicator (RI) reporting with port selection for high-resolution beamforming.
+- **Antenna Ports**: Supports 4, 8, 12, 16, 24, or 32 CSI-RS antenna ports:
+  - 4 ports: {3000, 3001, …, 3003}
+  - 8 ports: {3000, 3001, …, 3007}
+  - 12 ports: {3000, 3001, …, 3011}
+  - 16 ports: {3000, 3001, …, 3015}
+  - 24 ports: {3000, 3001, …, 3023}
+  - 32 ports: {3000, 3001, …, 3031}
+- **Configuration**: Enabled when the higher-layer parameter `codebookType` is set to `'typeII-PortSelection'`.
+
+#### Key Parameters
+1. **Number of CSI-RS Ports (PCSI-RS)**:
+   - Configured via higher-layer parameter `nrofPorts`.
+   - **PCSI-RS ∈ {4, 8, 12, 16, 24, 32}**.
+
+2. **Number of Beams (L)**:
+   - Configured via higher-layer parameter `numberOfBeams`.
+   - **L = 2** when PCSI-RS = 4.
+   - **L ∈ {2, 3, 4}** when PCSI-RS > 4.
+
+3. **Port Selection Sampling Size (d)**:
+   - Configured via higher-layer parameter `portSelectionSamplingSize`.
+   - **d ∈ {1, 2, 3, 4}**, with constraint **d ≤ min(PCSI-RS/2, L)**.
+
+4. **Phase Alphabet Size (NPSK)**:
+   - Configured via higher-layer parameter `phaseAlphabetSize`.
+   - **NPSK ∈ {4, 8}** (determines granularity of phase coefficients).
+
+5. **Subband Amplitude**:
+   - Configured via higher-layer parameter `subbandAmplitude`:
+     - `'true'`: Enables subband-specific amplitude coefficients.
+     - `'false'`: Disables subband-specific amplitude coefficients.
+
+6. **RI Restriction**:
+   - UE shall not report **RI > 2** (maximum 2 layers).
+   - Bitmap parameter `typeII-PortSelectionRI-Restriction` forms a bit sequence **r0, r1** (LSB: r0, MSB: r1).
+     - If **ri = 0** (i ∈ {0, 1}), PMI and RI reporting are prohibited for precoders with **υ = i + 1** layers.
+
+#### PMI Indices
+- Each PMI corresponds to indices **i1** and **i2**, where **υ** is the associated RI value (1 or 2 layers).
+- **i1**:
+  - **υ = 1**: **i1 = [i1,1, i1,3,1, i1,4,1]**.
+  - **υ = 2**: **i1 = [i1,1, i1,3,1, i1,4,1, i1,3,2, i1,4,2]**.
+- **i2**:
+  - When `subbandAmplitude = 'false'`:
+    - **υ = 1**: **i2 = [i2,1,1]**.
+    - **υ = 2**: **i2 = [i2,1,1, i2,1,2]**.
+  - When `subbandAmplitude = 'true'`:
+    - **υ = 1**: **i2 = [i2,1,1, i2,2,1]**.
+    - **υ = 2**: **i2 = [i2,1,1, i2,2,1, i2,1,2, i2,2,2]**.
+
+#### Port Selection
+- **L antenna ports per polarization** are selected by index **i1,1**:
+  - **i1,1 ∈ {0, 1, ..., ⌈(PCSI-RS/2)/d⌉ - 1}**.
+  - Represents the starting index for selecting **L** ports with step size **d**.
+
+#### Amplitude and Phase Coefficients
+- **Strongest Coefficient**:
+  - Identified by **i1,3,l ∈ {0, 1, ..., 2L-1}** for layer **l** (l = 1 to υ).
+- **Amplitude Coefficient Indicators**:
+  - **i1,4,l = [k_l,0⁽¹⁾, k_l,1⁽¹⁾, ..., k_l,2L-1⁽¹⁾]**, **k_l,i⁽¹⁾ ∈ {0, 1, ..., 7}**.
+  - **i2,2,l = [k_l,0⁽²⁾, k_l,1⁽²⁾, ..., k_l,2L-1⁽²⁾]**, **k_l,i⁽²⁾ ∈ {0, 1}** (when `subbandAmplitude = 'true'`).
+  - Mapping of **k_l,i⁽¹⁾** to amplitude **p_l,i⁽¹⁾** (Table 5.2.2.2.3-2):
+    | **k_l,i⁽¹⁾** | **p_l,i⁽¹⁾** |
+    |--------------|--------------|
+    | 0            | 0            |
+    | 1            | 1/64         |
+    | 2            | 1/32         |
+    | 3            | 1/16         |
+    | 4            | 1/8          |
+    | 5            | 1/4          |
+    | 6            | 1/2          |
+    | 7            | 1            |
+  - Mapping of **k_l,i⁽²⁾** to amplitude **p_l,i⁽²⁾** (Table 5.2.2.2.3-3):
+    | **k_l,i⁽²⁾** | **p_l,i⁽²⁾** |
+    |--------------|--------------|
+    | 0            | 1/2          |
+    | 1            | 1            |
+- **Phase Coefficient Indicators**:
+  - **i2,1,l = [c_l,0, c_l,1, ..., c_l,2L-1]**, **c_l,i ∈ {0, 1, ..., NPSK-1}**.
+- **Reporting Rules**:
+  - Strongest coefficient (**i1,3,l**): **k_l,i1,3,l⁽¹⁾ = 7**, **k_l,i1,3,l⁽²⁾ = 1**, **c_l,i1,3,l = 0** (not reported).
+  - Remaining **2L-1** elements of **i1,4,l** are reported, where **k_l,i⁽¹⁾ > 0** for **Ml** coefficients.
+  - When `subbandAmplitude = 'false'`:
+    - **k_l,i⁽²⁾ = 1** for all i, **i2,2,l** not reported.
+    - **i2,1,l** reported for coefficients with **k_l,i⁽¹⁾ > 0** (excluding i1,3,l), others set to **c_l,i = 0**.
+  - When `subbandAmplitude = 'true'`:
+    - Report **i2,2,l** and **i2,1,l** for the **min(Ml, K⁽²⁾)-1** strongest coefficients (excluding i1,3,l).
+    - **K⁽²⁾** (Table 5.2.2.2.3-4): **L = 2: 4**, **L = 3: 4**, **L = 4: 6**.
+    - Report **i2,1,l** for **min(Ml, M-Ml)** weakest non-zero coefficients with **c_l,i ∈ {0, 1, 2, 3}**.
+    - Remaining **2L-Ml** elements of **i2,1,l** set to **c_l,i = 0**, **i2,2,l** set to **k_l,i⁽²⁾ = 1**.
+  - If two elements of **i1,4,l** are identical, prioritize the lower index for the strongest coefficient set.
+
+#### Codebook Definition
+- **Table 5.2.2.2.4-1: Codebook for 1-layer and 2-layer CSI Reporting**:
+  - **1-layer (υ = 1)**:
+    - **W_i1,1,p⁽¹⁾,p⁽²⁾,i2,1,1⁽¹⁾ = W_i1,1,p⁽¹⁾,p⁽²⁾,i2,1,1 / √(2Σ p_l,i⁽¹⁾p_l,i⁽²⁾)**.
+  - **2-layer (υ = 2)**:
+    - Combines two precoders: **W⁽²⁾ = [W_i1,1,p⁽¹⁾,p⁽²⁾,i2,1,1 / √2, W_i1,1,p⁽¹⁾,p⁽²⁾,i2,1,2 / √2]**.
+  - **Precoder Formula**:
+    - **W_i1,1,p⁽¹⁾,p⁽²⁾,i2,1,l = Σ (v_i1,1+id p_l,i⁽¹⁾ p_l,i⁽²⁾ φ_l,i)** (sum over i = 0 to L-1).
+    - **v_m**: A **PCSI-RS/2**-element column vector with a value of 1 at element **(i1,1 + id) mod (PCSI-RS/2)** and zeros elsewhere.
+    - **φ_l,i = e^(jπc_l,i / NPSK)** (phase coefficient) with:
+      - **c_l,i ∈ {0, 1, ..., NPSK-1}** when `subbandAmplitude = 'false'` or for strongest coefficients.
+      - **c_l,i ∈ {0, 1, 2, 3}** for weakest coefficients when `subbandAmplitude = 'true'`.
+Below is a concise and organized set of notes based on the provided text from **3GPP TS 38.214, Section 5.2.2.2.5** regarding the **Enhanced Type II Codebook** for CSI reporting. The notes summarize key configurations, parameters, and codebook definitions for antenna ports and layers, structured for clarity and ease of understanding.
+
+---
+
+### 5.2.2.2.5 Enhanced Type II Codebook  
+- **Purpose**: Defines the Enhanced Type II Codebook for CSI reporting, supporting high-resolution beamforming with frequency-domain compression for up to 4 layers.
+- **Antenna Ports**: Supports 4, 8, 12, 16, 24, or 32 CSI-RS antenna ports:
+  - 4 ports: {3000, 3001, …, 3003}
+  - 8 ports: {3000, 3001, …, 3007}
+  - 12 ports: {3000, 3001, …, 3011}
+  - 16 ports: {3000, 3001, …, 3015}
+  - 24 ports: {3000, 3001, …, 3023}
+  - 32 ports: {3000, 3001, …, 3031}
+- **Configuration**: Enabled when the higher-layer parameter `codebookType` is set to `'typeII-r16'`.
+- **Reference**: 3GPP TS 38.214 version 16.2.0, Release 16 (ETSI TS 138 214 V16.2.0, July 2020).
+
+#### Key Parameters
+1. **Antenna Configuration**:
+   - Configured via higher-layer parameter `n1-n2-codebookSubsetRestriction-r16`, defining:
+     - **N1**: Number of antenna elements in the first dimension (horizontal).
+     - **N2**: Number of antenna elements in the second dimension (vertical).
+   - Number of CSI-RS ports: **PCSI-RS = 2 × N1 × N2**.
+   - Supported configurations and oversampling factors (O1, O2) are listed in **Table 5.2.2.2.1-2**.
+
+2. **Codebook Parameters (L, M, β)**:
+   - Configured via higher-layer parameter `paramCombination-r16`.
+   - Mapping given in **Table 5.2.2.2.5-1**:
+     | **paramCombination-r16** | **L** | **M** | **β** |
+     |-------------------------|-------|-------|-------|
+     | 1                       | 2     | 1/4   | 1/4   |
+     | 2                       | 2     | 1/4   | 1/2   |
+     | 3                       | 4     | 1/4   | 1/4   |
+     | 4                       | 4     | 1/4   | 1/2   |
+     | 5                       | 4     | 1/4   | 3/4   |
+     | 6                       | 4     | 1/2   | 1/2   |
+     | 7                       | 6     | 1/4   | 1/2   |
+     | 8                       | 6     | 1/4   | 3/4   |
+   - **L**: Number of spatial beams.
+   - **M**: Number of frequency-domain basis vectors.
+   - **β**: Parameter controlling the number of non-zero coefficients.
+   - **Restrictions**:
+     - Not configured with `paramCombination-r16` = 3, 4, 5, 6, 7, or 8 when PCSI-RS = 4.
+     - Not configured with 7 or 8 when PCSI-RS < 32.
+     - Not configured with 7 or 8 when `typeII-RI-Restriction-r16` has ri = 1 for i > 1.
+     - Not configured with 7 or 8 when N = 2.
+
+3. **Number of PMI Subbands (N)**:
+   - Configured via higher-layer parameter `numberOfPMISubbandsPerCQISubband-r16`.
+   - **N ∈ {1, 2}**:
+     - **N = 1**: One precoding matrix per subband in `csi-ReportingBand`.
+     - **N = 2**:
+       - For non-edge subbands: Two precoding matrices (first and second halves of PRBs).
+       - For first/last subband of a BWP:
+         - If **NPRB mod N_BWP^size ≥ PCSI-RS/2**: One matrix for the first subband.
+         - If **NPRB mod N_BWP^size < PCSI-RS/2**: Two matrices (first PCSI-RS/2 - NPRB mod N_BWP^size PRBs, last PCSI-RS/2 PRBs).
+         - If **1 + NPRB + N_BWP^size - 1 mod N_BWP^size ≤ PCSI-RS/2**: One matrix for the last subband.
+         - If **1 + NPRB + N_BWP^size - 1 mod N_BWP^size > PCSI-RS/2**: Two matrices (first PCSI-RS/2 PRBs, remaining PRBs).
+
+4. **RI Restriction**:
+   - UE reports RI (υ) per `typeII-RI-Restriction-r16`, with **υ ≤ 4**.
+   - Bitmap: **r0, r1, r2, r3** (LSB: r0, MSB: r3).
+     - If **ri = 0** (i ∈ {0, 1, 2, 3}), PMI and RI reporting prohibited for **υ = i + 1** layers.
+
+#### PMI Indices
+- PMI corresponds to indices **i1** and **i2**, where **υ** is the RI value (1 to 4 layers):
+  - **υ = 1**: **i1 = [i1,1, i1,2, i1,3, i1,4,1, i1,5,1, i1,6,1]**.
+  - **υ = 2**: **i1 = [i1,1, i1,2, i1,3, i1,4,1, i1,5,1, i1,6,1, i1,4,2, i1,5,2, i1,6,2]**.
+  - **υ = 3**: **i1 = [i1,1, i1,2, i1,3, i1,4,1, i1,5,1, i1,6,1, i1,4,2, i1,5,2, i1,6,2, i1,4,3, i1,5,3, i1,6,3]**.
+  - **υ = 4**: **i1 = [i1,1, i1,2, i1,3, i1,4,1, i1,5,1, i1,6,1, i1,4,2, i1,5,2, i1,6,2, i1,4,3, i1,5,3, i1,6,3, i1,4,4, i1,5,4, i1,6,4]**.
+  - **i2**:
+    - **υ = 1**: **i2 = [i2,3,1, i2,4,1, i2,5,1]**.
+    - **υ = 2**: **i2 = [i2,3,1, i2,4,1, i2,5,1, i2,3,2, i2,4,2, i2,5,2]**.
+    - **υ = 3**: **i2 = [i2,3,1, i2,4,1, i2,5,1, i2,3,2, i2,4,2, i2,5,2, i2,3,3, i2,4,3, i2,5,3]**.
+    - **υ = 4**: **i2 = [i2,3,1, i2,4,1, i2,5,1, i2,3,2, i2,4,2, i2,5,2, i2,3,3, i2,4,3, i2,5,3, i2,3,4, i2,4,4, i2,5,4]**.
+
+#### Beam and Frequency Basis Selection
+- **L spatial beams**:
+  - Identified by **i1,1**, **i1,2** (as in Section 5.2.2.2.3):
+    - **n1, n2** derived from **i1,2** using the algorithm in 5.2.2.2.3 with **C(x, y)** from **Table 5.2.2.2.5-4**.
+- **M frequency-domain basis vectors**:
+  - Identified by **i1,3** (for M > 19) and **i1,4,l**:
+    - **i1,3 ∈ {0, 1, ..., 2M-1}** (for M > 19).
+    - **i1,4,l = [n3,l⁽⁰⁾, ..., n3,l⁽M-1⁾]**, **n3,l⁽m⁾ ∈ {0, 1, ..., M-1}**.
+    - **Msel,l ∈ {-2M+1, ..., 0}** (for M > 19, indicated by i1,3).
+  - If **M ≤ 19**, **i1,3 = 0**, not reported.
+  - If **M = 1**, **i1,4,l = 0**, not reported.
+  - Non-zero elements of **n3,l** derived from **i1,4,l** using **Table 5.2.2.2.5-4** and algorithm:
+    - Initialize **s0 = 0**.
+    - For **m = 1 to M-1**:
+      - Find largest **x* ∈ {M-1-m, ..., M-1}** such that **i1,4,l - s_m-1 ≥ C(x*, M-m)**.
+      - **e_m = i1,4,l - s_m-1 - C(x*, M-m)**.
+      - **s_m = s_m-1 + e_m**.
+      - If **M ≤ 19**: **n3,l⁽m⁾ = M-1-x***.
+      - Else:
+        - **n3,l⁽m⁾ = 2M-1-x*** if **2M-1-x* ≤ Msel,l + M-1**.
+        - **n3,l⁽m⁾ = 2M-1-x* - (M-2M)** otherwise.
+    - Indices assigned such that **n3,l⁽m⁾** increases with **m**.
+  - Reverse mapping for **i1,4,l**:
+    - **i1,4,l = Σ C(M-1-n3,l⁽m⁾, M-m)** (sum over m = 1 to M-1).
+
+#### Amplitude and Phase Coefficients
+- **Amplitude Coefficient Indicators**:
+  - **i2,3,l = [k_l,0⁽¹⁾, k_l,1⁽¹⁾, ..., k_l,2L-1⁽¹⁾]**, **k_l,m⁽¹⁾ ∈ {1, ..., 15}**.
+  - **i2,4,l = [k_l,0,m⁽²⁾, ..., k_l,2L-1,M-1⁽²⁾]**, **k_l,m,u⁽²⁾ ∈ {0, ..., 7}**.
+  - Mapping of **k_l,m⁽¹⁾** to **p_l,m⁽¹⁾** (Table 5.2.2.2.5-2):
+    | **k_l,m⁽¹⁾** | **p_l,m⁽¹⁾**         |
+    |--------------|----------------------|
+    | 0            | Reserved             |
+    | 1            | 1/√128               |
+    | 2            | (1/8192)^(1/4)       |
+    | 3            | 1/8                  |
+    | 4            | (1/2048)^(1/4)       |
+    | 5            | 1/(2√8)              |
+    | 6            | (1/512)^(1/4)        |
+    | 7            | 1/4                  |
+    | 8            | (1/128)^(1/4)        |
+    | 9            | 1/√8                 |
+    | 10           | (1/32)^(1/4)         |
+    | 11           | 1/2                  |
+    | 12           | (1/8)^(1/4)          |
+    | 13           | 1/√2                 |
+    | 14           | (1/2)^(1/4)          |
+    | 15           | 1                    |
+  - Mapping of **k_l,m,u⁽²⁾** to **p_l,m,u⁽²⁾** (Table 5.2.2.2.5-3):
+    | **k_l,m,u⁽²⁾** | **p_l,m,u⁽²⁾** |
+    |----------------|----------------|
+    | 0              | 1/(8√2)        |
+    | 1              | 1/8            |
+    | 2              | 1/(4√2)        |
+    | 3              | 1/4            |
+    | 4              | 1/(2√2)        |
+    | 5              | 1/2            |
+    | 6              | 1/√2           |
+    | 7              | 1              |
+- **Phase Coefficient Indicators**:
+  - **i2,5,l = [c_l,0,0, ..., c_l,2L-1,M-1]**, **c_l,m,u ∈ {0, ..., 15}**.
+- **Bitmap Indicators**:
+  - **i1,6,l = [k_l,0,0⁽³⁾, ..., k_l,2L-1,M-1⁽³⁾]**, **k_l,m,u⁽³⁾ ∈ {0, 1}**.
+  - **M0 = ⌈2Lβ⌉**: Maximum number of non-zero coefficients per layer.
+  - **Ml = Σ Σ k_l,m,u⁽³⁾ ≤ M0**: Non-zero coefficients for layer l.
+  - **M_tot = Σ Ml ≤ 2M0**: Total non-zero coefficients across all layers.
+- **Strongest Coefficient**:
+  - Identified by **i1,5,l ∈ {0, 1, ..., 2L-1}**:
+    - For **υ = 1**: **i1,5,l = l_star**.
+    - For **υ > 1**: **i1,5,l = l_star + Σ k_l,m,0⁽³⁾ × (m < l_star)**.
+  - **l_star, m_star**: Indices of strongest coefficient with **k_l,l_star,m_star⁽²⁾ = 7**, **k_l,l_star,m_star⁽³⁾ = 1**, **c_l,l_star,m_star = 0** (not reported).
+- **Reporting Rules**:
+  - Report **i1,5,l** for all layers.
+  - Report **Ml - 1** non-zero coefficients for **k_l,m,u⁽²⁾** and **c_l,m,u** where **k_l,m,u⁽³⁾ = 1**, **m ≠ l_star**, **u ≠ 0**.
+  - Remaining **2LM - M_tot** coefficients for **k_l,m,u⁽²⁾** and **c_l,m,u** not reported.
+
+#### Codebook Definition
+- **Table 5.2.2.2.5-5: Codebook for 1-4 Layer CSI Reporting**:
+  - **1-layer (υ = 1)**:
+    - **W = W_n1,n2,n3,l,p_l⁽¹⁾,p_l⁽²⁾,c_l / √(Σ Σ p_l,m⁽¹⁾ p_l,m,u⁽²⁾ c_l,m,u)**.
+  - **2-layer (υ = 2)**:
+    - **W = [W_n1,n2,n3,1,p_1⁽¹⁾,p_1⁽²⁾,c_1 / √2, W_n1,n2,n3,2,p_2⁽¹⁾,p_2⁽²⁾,c_2 / √2]**.
+  - **3-layer (υ = 3)**:
+    - **W = [W_n1,n2,n3,1,p_1⁽¹⁾,p_1⁽²⁾,c_1 / √3, W_n1,n2,n3,2,p_2⁽¹⁾,p_2⁽²⁾,c_2 / √3, W_n1,n2,n3,3,p_3⁽¹⁾,p_3⁽²⁾,c_3 / √3]**.
+  - **4-layer (υ = 4)**:
+    - **W = [W_n1,n2,n3,1,p_1⁽¹⁾,p_1⁽²⁾,c_1 / 2, W_n1,n2,n3,2,p_2⁽¹⁾,p_2⁽²⁾,c_2 / 2, W_n1,n2,n3,3,p_3⁽¹⁾,p_3⁽²⁾,c_3 / 2, W_n1,n2,n3,4,p_4⁽¹⁾,p_4⁽²⁾,c_4 / 2]**.
+  - **Precoder Formula**:
+    - **W_n1,n2,n3,l,p_l⁽¹⁾,p_l⁽²⁾,c_l = Σ Σ v_n1,n2⁽m⁾ p_l,m⁽¹⁾ p_l,m,u⁽²⁾ φ_l,m,u / √(Σ Σ p_l,m⁽¹⁾ p_l,m,u⁽²⁾ c_l,m,u)**.
+    - **v_n1,n2⁽m⁾**: Beamforming vector as in 5.2.2.2.3.
+    - **φ_l,m,u = e^(j2π c_l,m,u / 16)**.
+    - **c_l,m,u = 0** if **k_l,m,u⁽³⁾ = 0**.
+
+#### Codebook Subset Restriction
+- **Bitmap Parameter**: `n1-n2-codebookSubsetRestriction-r16` forms **B = B1B2**.
+- **Vector Groups**:
+  - Configured as in 5.2.2.2.3, with indices **g⁽k⁾**.
+- **B2**:
+  - Bits **b_2N1N2-2,x⁽k⁾, b_2N1N2-1,x⁽k⁾** indicate maximum allowed average amplitude for coefficients in group **g⁽k⁾** (Table 5.2.2.2.5-6):
+    | **Bits (b_2N1N2-2,x⁽k⁾, b_2N1N2-1,x⁽k⁾)** | **Max Avg Amplitude** |
+    |-----------------------------------------|----------------------|
+    | 00                                      | 0                    |
+    | 01                                      | √(1/4)              |
+    | 10                                      | √(1/2)              |
+    | 11                                      | 1                    |
+  - UE not supporting `amplitudeSubsetRestriction` cannot be configured with **b_2N1N2-2,x⁽k⁾, b_2N1N2-1,x⁽k⁾ = 01 or 10**.
+
+Below is a concise and organized set of notes based on the provided text from **3GPP TS 38.214, Section 5.2.2.2.6** regarding the **Enhanced Type II Port Selection Codebook** for CSI reporting. The notes summarize key configurations, parameters, and codebook definitions for antenna ports and layers, structured for clarity and ease of understanding.
+
+---
+
+### 5.2.2.2.6 Enhanced Type II Port Selection Codebook 
+
+
+- **Purpose**: Defines the Enhanced Type II Port Selection Codebook for CSI reporting, supporting high-resolution beamforming with port selection and frequency-domain compression for up to 4 layers.
+- **Antenna Ports**: Supports 4, 8, 12, 16, 24, or 32 CSI-RS antenna ports:
+  - 4 ports: {3000, 3001, …, 3003}
+  - 8 ports: {3000, 3001, …, 3007}
+  - 12 ports: {3000, 3001, …, 3011}
+  - 16 ports: {3000, 3001, …, 3015}
+  - 24 ports: {3000, 3001, …, 3023}
+  - 32 ports: {3000, 3001, …, 3031}
+- **Configuration**: Enabled when the higher-layer parameter `codebookType` is set to `'typeII-PortSelection-r16'`.
+
+#### Key Parameters
+1. **Number of CSI-RS Ports (PCSI-RS)**:
+   - Configured as in Section 5.2.2.2.4 (via higher-layer parameter `nrofPorts`).
+   - **PCSI-RS ∈ {4, 8, 12, 16, 24, 32}**.
+
+2. **Port Selection Sampling Size (d)**:
+   - Configured via higher-layer parameter `portSelectionSamplingSize-r16`.
+   - **d ∈ {1, 2, 3, 4}**, with constraint **d ≤ min(PCSI-RS/2, L)**.
+
+3. **Codebook Parameters (L, M, β)**:
+   - Configured via higher-layer parameter `paramCombination-r16` as in Section 5.2.2.2.5.
+   - Mapping given in **Table 5.2.2.2.6-1**:
+     | **paramCombination-r16** | **L** | **M** | **β** |
+     |-------------------------|-------|-------|-------|
+     | 1                       | 2     | 1/4   | 1/4   |
+     | 2                       | 2     | 1/4   | 1/2   |
+     | 3                       | 4     | 1/4   | 1/4   |
+     | 4                       | 4     | 1/4   | 1/2   |
+     | 5                       | 4     | 1/4   | 3/4   |
+     | 6                       | 4     | 1/2   | 1/2   |
+   - **L**: Number of selected ports per polarization.
+   - **M**: Number of frequency-domain basis vectors.
+   - **β**: Parameter controlling the number of non-zero coefficients.
+
+4. **Number of PMI Subbands (N)**:
+   - Configured as in Section 5.2.2.2.5 (via `numberOfPMISubbandsPerCQISubband-r16`).
+   - **N ∈ {1, 2}**, determining precoding matrix granularity per subband.
+
+5. **RI Restriction**:
+   - UE reports RI (υ) per `typeII-PortSelectionRI-Restriction-r16`, with **υ ≤ 4**.
+   - Bitmap: **r0, r1, r2, r3** (LSB: r0, MSB: r3).
+     - If **ri = 0** (i ∈ {0, 1, 2, 3}), PMI and RI reporting prohibited for **υ = i + 1** layers.
+
+#### PMI Indices
+- PMI corresponds to indices **i1** and **i2**, where **υ** is the RI value (1 to 4 layers):
+  - **υ = 1**: **i1 = [i1,1, i1,3, i1,4,1, i1,5,1, i1,6,1]**.
+  - **υ = 2**: **i1 = [i1,1, i1,3, i1,4,1, i1,5,1, i1,6,1, i1,4,2, i1,5,2, i1,6,2]**.
+  - **υ = 3**: **i1 = [i1,1, i1,3, i1,4,1, i1,5,1, i1,6,1, i1,4,2, i1,5,2, i1,6,2, i1,4,3, i1,5,3, i1,6,3]**.
+  - **υ = 4**: **i1 = [i1,1, i1,3, i1,4,1, i1,5,1, i1,6,1, i1,4,2, i1,5,2, i1,6,2, i1,4,3, i1,5,3, i1,6,3, i1,4,4, i1,5,4, i1,6,4]**.
+  - **i2**:
+    - **υ = 1**: **i2 = [i2,3,1, i2,4,1, i2,5,1]**.
+    - **υ = 2**: **i2 = [i2,3,1, i2,4,1, i2,5,1, i2,3,2, i2,4,2, i2,5,2]**.
+    - **υ = 3**: **i2 = [i2,3,1, i2,4,1, i2,5,1, i2,3,2, i2,4,2, i2,5,2, i2,3,3, i2,4,3, i2,5,3]**.
+    - **υ = 4**: **i2 = [i2,3,1, i2,4,1, i2,5,1, i2,3,2, i2,4,2, i2,5,2, i2,3,3, i2,4,3, i2,5,3, i2,3,4, i2,4,4, i2,5,4]**.
+
+#### Port and Frequency Basis Selection
+- **2L Antenna Ports**:
+  - Selected by **i1,1** as in Section 5.2.2.2.4:
+    - **i1,1 ∈ {0, 1, ..., ⌈(PCSI-RS/2)/d⌉ - 1}**, indicating the starting index for **L** ports with step size **d**.
+- **M Frequency-Domain Basis Vectors**:
+  - Identified by **i1,3** (for M > 19) and **i1,4,l** as in Section 5.2.2.2.5:
+    - **i1,3 ∈ {0, 1, ..., 2M-1}** (for M > 19).
+    - **i1,4,l = [n3,l⁽⁰⁾, ..., n3,l⁽M-1⁾]**, **n3,l⁽m⁾ ∈ {0, 1, ..., M-1}**.
+    - **Msel,l ∈ {-2M+1, ..., 0}** (for M > 19, indicated by i1,3).
+  - Non-zero elements derived as in 5.2.2.2.5 using **Table 5.2.2.2.5-4**.
+
+#### Amplitude and Phase Coefficients
+- **Strongest Coefficient**:
+  - Identified by **i1,6,l** as in 5.2.2.2.5.
+- **Amplitude Coefficient Indicators**:
+  - **i2,3,l = [k_l,0⁽¹⁾, k_l,1⁽¹⁾, ..., k_l,2L-1⁽¹⁾]**, **k_l,m⁽¹⁾ ∈ {1, ..., 15}**.
+  - **i2,4,l = [k_l,0,m⁽²⁾, ..., k_l,2L-1,M-1⁽²⁾]**, **k_l,m,u⁽²⁾ ∈ {0, ..., 7}**.
+  - Mappings from **k_l,m⁽¹⁾** to **p_l,m⁽¹⁾** (Table 5.2.2.2.5-2) and **k_l,m,u⁽²⁾** to **p_l,m,u⁽²⁾** (Table 5.2.2.2.5-3) as in 5.2.2.2.5.
+- **Phase Coefficient Indicators**:
+  - **i2,5,l = [c_l,0,0, ..., c_l,2L-1,M-1]**, **c_l,m,u ∈ {0, ..., 15}**.
+- **Bitmap Indicators**:
+  - **i1,5,l = [k_l,0,0⁽³⁾, ..., k_l,2L-1,M-1⁽³⁾]**, **k_l,m,u⁽³⁾ ∈ {0, 1}**.
+  - **M0 = ⌈2Lβ⌉**, **Ml = Σ Σ k_l,m,u⁽³⁾ ≤ M0**, **M_tot = Σ Ml ≤ 2M0**.
+- **Reporting Rules**:
+  - As in 5.2.2.2.5: Report strongest coefficient, **i1,6,l**, **Ml - 1** non-zero coefficients for **k_l,m,u⁽²⁾** and **c_l,m,u**, with remaining coefficients not reported.
+
+#### Codebook Definition
+- **Table 5.2.2.2.6-2: Codebook for 1-4 Layer CSI Reporting**:
+  - **1-layer (υ = 1)**:
+    - **W = W_i1,1,n3,l,p_l⁽¹⁾,p_l⁽²⁾,c_l / √(Σ Σ p_l,m⁽¹⁾ p_l,m,u⁽²⁾ c_l,m,u)**.
+  - **2-layer (υ = 2)**:
+    - **W = [W_i1,1,n3,1,p_1⁽¹⁾,p_1⁽²⁾,c_1 / √2, W_i1,1,n3,2,p_2⁽¹⁾,p_2⁽²⁾,c_2 / √2]**.
+  - **3-layer (υ = 3)**:
+    - **W = [W_i1,1,n3,1,p_1⁽¹⁾,p_1⁽²⁾,c_1 / √3, W_i1,1,n3,2,p_2⁽¹⁾,p_2⁽²⁾,c_2 / √3, W_i1,1,n3,3,p_3⁽¹⁾,p_3⁽²⁾,c_3 / √3]**.
+  - **4-layer (υ = 4)**:
+    - **W = [W_i1,1,n3,1,p_1⁽¹⁾,p_1⁽²⁾,c_1 / 2, W_i1,1,n3,2,p_2⁽¹⁾,p_2⁽²⁾,c_2 / 2, W_i1,1,n3,3,p_3⁽¹⁾,p_3⁽²⁾,c_3 / 2, W_i1,1,n3,4,p_4⁽¹⁾,p_4⁽²⁾,c_4 / 2]**.
+  - **Precoder Formula**:
+    - **W_i1,1,n3,l,p_l⁽¹⁾,p_l⁽²⁾,c_l = Σ Σ v_i1,1+id p_l,m⁽¹⁾ p_l,m,u⁽²⁾ φ_l,m,u / √(Σ Σ p_l,m⁽¹⁾ p_l,m,u⁽²⁾ c_l,m,u)**.
+    - **v_m**: A **PCSI-RS/2**-element column vector with 1 at element **(i1,1 + id) mod (PCSI-RS/2)** and zeros elsewhere.
+    - **φ_l,m,u = e^(j2π c_l,m,u / 16)**.
+    - **c_l,m,u = 0** if **k_l,m,u⁽³⁾ = 0**.
+
+
+
+### 5.2.2.3 NZP CSI-RS
+#### Key Parameters for NZP CSI-RS Configuration
+The following parameters are configured via `NZP-CSI-RS-Resource`, `CSI-ResourceConfig`, and `NZP-CSI-RS-ResourceSet` for each CSI-RS resource, assuming non-zero transmission power.
+
+1. **nzp-CSI-RS-ResourceId**
+   - Defines the unique identity of the CSI-RS resource configuration.
+
+2. **periodicityAndOffset**
+   - Specifies the periodicity and slot offset for periodic or semi-persistent CSI-RS.
+   - All CSI-RS resources in a set share the **same periodicity**, but slot offsets may vary across resources.
+
+3. **resourceMapping**
+   - Defines:
+     - **Number of ports** (`nrofPorts`): Allowable values per Clause 7.4.1.5 of TS 38.211.
+     - **CDM-type**: Code Division Multiplexing values and pattern (per Clause 7.4.1.5 of TS 38.211).
+     - **OFDM symbol and subcarrier occupancy** within a slot (per Clause 7.4.1.5 of TS 38.211).
+     - **Density**: CSI-RS frequency density per PRB for each port.
+       - For density = 1/2, defines odd/even PRB allocation relative to the common resource block grid.
+       - Includes CSI-RS PRB offset for density = 1/2.
+   - Allowable values for density and ports are defined in Clause 7.4.1.5 of TS 38.211.
+
+4. **powerControlOffset**
+   - Assumed ratio of **PDSCH EPRE** (Energy Per Resource Element) to **NZP CSI-RS EPRE** for CSI feedback.
+   - Range: **[-8, 15] dB**, with **1 dB step size**.
+
+5. **powerControlOffsetSS**
+   - Assumed ratio of **NZP CSI-RS EPRE** to **SS/PBCH block EPRE**.
+
+6. **BWP-Id** (in `CSI-ResourceConfig`)
+   - Specifies the **Bandwidth Part (BWP)** where the CSI-RS resource is located.
+
+7. **repetition** (in `NZP-CSI-RS-ResourceSet`)
+   - Indicates whether the CSI-RS resources in the set are transmitted with the **same downlink spatial domain transmission filter**.
+   - Configurable only when the higher-layer parameter `reportQuantity` (linked to the CSI-RS resource set) is set to:
+     - `'cri-RSRP'`
+     - `'cri-SINR'`
+     - `'none'`
+   - Associated with Clause 5.1.6.1.2 of TS 38.214.
+
+8. **qcl-InfoPeriodicCSI-RS**
+   - References a **TCI-State** indicating Quasi-Co-Location (QCL) source RS(s) and QCL type(s).
+   - If the TCI-State references an RS with **'QCL-TypeD'**, the RS can be:
+     - An **SS/PBCH block** in the same or different CC/DL BWP.
+     - A **periodic CSI-RS resource** in the same or different CC/DL BWP.
+
+9. **trs-Info** (in `NZP-CSI-RS-ResourceSet`)
+   - Indicates that the antenna port with the same port index across NZP CSI-RS resources in the set is identical (per Clause 5.1.6.1.1 of TS 38.214).
+   - Configurable when:
+     - No reporting setting is configured, or
+     - `reportQuantity` (linked to the CSI-RS resource set) is set to `'none'`.
+
+#### Resource Set Constraints
+- All CSI-RS resources within a set must have:
+  - The **same density**.
+  - The **same number of ports** (`nrofPorts`).
+  - **Exception**: NZP CSI-RS resources used for interference measurement may have different density or ports.
+- All CSI-RS resources in a set must have:
+  - The **same starting Resource Block (RB)**.
+  - The **same number of RBs**.
+  - The **same CDM-type**.
+
+#### Bandwidth and Resource Block Configuration
+- Configured via the `CSI-FrequencyOccupation` IE in `CSI-RS-ResourceMapping`:
+  - **nrofRBs**: Number of RBs (integer multiple of 4 RBs).
+  - **startingRB**: Initial Common Resource Block (CRB) index (integer multiple of 4 RBs, referenced to CRB 0 on the common resource block grid).
+- Bandwidth and initial CRB index determination (per Clause 7.4.1.5 of TS 38.211):
+  - If `startingRB` < `N_BWP^start`, then initial CRB index = `N_BWP^start`.
+  - Otherwise, initial CRB index = `startingRB`.
+- If `nrofRBs` > (`N_BWP^size` + `N_BWP^start` - `startingRB`), the bandwidth is assumed to be:
+  - `nrofRBs` = `N_BWP^size` + `N_BWP^start` - `startingRB`.
+
+
+### 5.2.2.4 Channel State Information – Interference Measurement (CSI-IM)
+- UE can be configured with one or more **CSI-IM resource set configuration(s)** via the higher-layer parameter `CSI-IM-ResourceSet`.
+- Each CSI-IM resource set contains **K ≥ 1 CSI-IM resource(s)**.
+
+#### Configuration Parameters
+- Configured via higher-layer parameter `CSI-IM-Resource` for each CSI-IM resource:
+  - **csi-IM-ResourceId**: Identifies the CSI-IM resource configuration.
+  - **subcarrierLocation-p0** or **subcarrierLocation-p1**: Defines subcarrier occupancy within a slot for `csi-IM-ResourceElementPattern` set to 'pattern0' or 'pattern1', respectively.
+  - **symbolLocation-p0** or **symbolLocation-p1**: Defines OFDM symbol location within a slot for `csi-IM-ResourceElementPattern` set to 'pattern0' or 'pattern1', respectively.
+  - **periodicityAndOffset**: Configures periodicity and slot offset for periodic/semi-persistent CSI-IM.
+  - **freqBand**: Enables configuration of frequency-occupancy of CSI-IM.
+
+#### Resource Element Locations
+- In each PRB configured by `freqBand`, UE assumes CSI-IM resources are located in:
+  - **Pattern0**: Resource elements at `(kCSI-IM, lCSI-IM)`, `(kCSI-IM + 1, lCSI-IM)`, `(kCSI-IM, lCSI-IM + 1)`, `(kCSI-IM + 1, lCSI-IM + 1)`.
+  - **Pattern1**: Resource elements at `(kCSI-IM, lCSI-IM)`, `(kCSI-IM + 1, lCSI-IM)`, `(kCSI-IM + 2, lCSI-IM)`, `(kCSI-IM + 3, lCSI-IM)`.
+  - Where:
+    - **kCSI-IM**: Configured frequency-domain location.
+    - **lCSI-IM**: Configured time-domain location.
+
+### 5.2.2.5 CSI Reference Resource Definition
+- Defines the **CSI reference resource** for a serving cell in frequency and time domains for CSI reporting.
+
+#### Frequency Domain
+- CSI reference resource is defined by the group of downlink PRBs corresponding to the band related to the derived CSI.
+
+#### Time Domain
+- For CSI reporting in uplink slot **n'**, the CSI reference resource is a single downlink slot **n - nCSI_ref**, where:
+  - **n - nCSI_ref** is calculated as:
+    - \( n' = \left\lfloor \frac{n}{2^{\mu_{DL} - \mu_{UL}}} \right\rfloor \), with \(\mu_{DL}\) and \(\mu_{UL}\) as subcarrier spacing configurations for DL and UL, respectively.
+  - **nCSI_ref** depends on reporting type:
+    - **Periodic/Semi-persistent CSI Reporting**:
+      - If a single CSI-RS/SSB resource is configured: **nCSI_ref** is the smallest value ≥ \(4 \cdot 2^{\mu}\), corresponding to a valid downlink slot.
+      - If multiple CSI-RS/SSB resources are configured: **nCSI_ref** is the smallest value ≥ \(5 \cdot 2^{\mu_{DL}}\), corresponding to a valid downlink slot.
+    - **Aperiodic CSI Reporting**:
+      - If DCI indicates reporting in the same slot as the CSI request: **nCSI_ref** is in the same valid downlink slot as the request.
+      - Otherwise: **nCSI_ref** is the smallest value ≥ \(\left\lfloor \frac{\text{slot}_{NZ \, symb}}{Z'} \right\rfloor\), corresponding to a valid downlink slot, where \(Z'\) is the delay requirement (Clause 5.4).
+
+#### Valid Downlink Slot Criteria
+- A slot is considered a valid downlink slot if:
+  - It includes at least one higher-layer configured downlink or flexible symbol.
+  - It does not fall within a configured measurement gap for the UE.
+- If no valid downlink slot exists for the CSI reference resource, CSI reporting is omitted in uplink slot **n'**.
+
+#### Measurement Conditions
+- **Periodic/Semi-persistent CSI-RS/CSI-IM/SSB**:
+  - UE is not expected to measure channel/interference on CSI-RS/CSI-IM/SSB whose last OFDM symbol is received up to \(Z'\) symbols before the first OFDM symbol of aperiodic CSI reporting.
+- **Post-Configuration**:
+  - After CSI report (re)configuration, serving cell activation, BWP change, or SP-CSI activation, UE reports CSI only after receiving at least one CSI-RS transmission occasion for channel measurement and CSI-RS/CSI-IM for interference measurement no later than the CSI reference resource; otherwise, the report is dropped.
+- **DRX Mode**:
+  - UE reports CSI only if receiving at least one CSI-RS/CSI-IM occasion in DRX Active Time no later than the CSI reference resource; otherwise, the report is dropped.
+  - With DCI format 2_6 and `ps-TransmitOtherPeriodicCSI`:
+    - Reports CSI during `drx-onDurationTimer` (inside/outside active time) if receiving CSI-RS/CSI-IM during this duration; otherwise, drops the report.
+  - With `ps-TransmitPeriodicL1-RSRP`:
+    - Reports L1-RSRP during `drx-onDurationTimer` (inside/outside active time) if receiving CSI-RS/CSI-IM; otherwise, drops the report.
+
+#### CSI Derivation Constraints
+- UE is not expected to derive CSI feedback if an NZP CSI-RS resource for channel measurement overlaps with a CSI-IM resource or NZP CSI-RS resource for interference measurement.
+
+#### CQI Index Derivation Assumptions
+- If configured to report CQI index in the CSI reference resource, UE assumes:
+  - First 2 OFDM symbols are occupied by control signaling.
+  - 12 PDSCH and DM-RS symbols.
+  - Same BWP subcarrier spacing as PDSCH reception.
+  - Bandwidth as configured for the CQI report.
+  - CP length and subcarrier spacing as configured for PDSCH.
+  - No REs used by PSS, SSS, or PBCH.
+  - Redundancy Version 0.
+  - PDSCH EPRE to CSI-RS EPRE ratio as per Clause 5.2.2.3.1.
+  - No REs allocated for NZP/ZP CSI-RS.
+  - Maximum front-loaded DM-RS symbols as per `maxLength` in `DMRS-DownlinkConfig`.
+  - Additional DM-RS symbols as per `dmrs-AdditionalPosition`.
+  - PDSCH symbols exclude DM-RS.
+  - PRB bundling size of 2 PRBs.
+  - PDSCH transmission with up to 8 layers (Clause 7.3.1.4, TS 38.211).
+- **PDSCH Signal Mapping**:
+  - \( \begin{bmatrix} y^{(i)}(0) \\ \vdots \\ y^{(i)}(P-1) \end{bmatrix} = W^{(i)} \begin{bmatrix} x^{(i)}(0) \\ \vdots \\ x^{(i)}(\nu-1) \end{bmatrix} \)
+    - \( x^{(i)} \) is a vector of PDSCH symbols from layer mapping.
+    - \( P \in \{1, 2, 4, 8, 12, 16, 24, 32\} \) is the number of CSI-RS ports.
+    - If \( P = 1 \), \( W^{(i)} = 1 \).
+    - If `reportQuantity` is 'cri-RI-PMI-CQI' or 'cri-RI-LI-PMI-CQI', \( W^{(i)} \) is the precoding matrix from reported PMI.
+    - If `reportQuantity` is 'cri-RI-CQI', \( W^{(i)} \) follows Clause 5.2.1.4.2.
+    - If `reportQuantity` is 'cri-RI-i1-CQI', \( W^{(i)} \) is based on reported i1 (Clause 5.2.1.4.2).
+  - PDSCH signals on ports [3000, …, 3000 + P - 1] have EPRE to CSI-RS EPRE ratio as per Clause 5.2.2.3.1.

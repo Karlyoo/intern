@@ -1,1 +1,81 @@
 
+```
+【 Uplink: UE TX (Simulation Transmitter) 】       【 Downlink: UE RX (Simulation Receiver) 】
+
+Input: MAC PDU (bytes)                      ┌──────────────────────────────┐
+        ↓                                   │ OFDM FFT + CP remove         │
+┌──────────────────────────────┐            │ Input: RX samples            │
+│ CRC attachment (crc_byte.c)  │            │ Output: freq-domain symbols  │
+│ Output: bits + CRC           │            └────────────┬─────────────────┘
+└────────────┬─────────────────┘                         ↓
+             ↓                            ┌──────────────────────────────┐
+┌──────────────────────────────┐         │ channel_estimation           │
+│ Segmentation (nr_segmentation.c)│       │ Output: equalized symbols    │
+│ Output: LDPC segments (bits)  │         └────────────┬─────────────────┘
+└────────────┬─────────────────┘                         ↓
+             ↓                            ┌──────────────────────────────┐
+┌──────────────────────────────┐         │ Demodulation + LLR calculate │
+│ LDPC encode (nr_dlsch_coding.c)│       │ Output: soft bits (LLRs)     │
+│ Output: encoded bits          │         └────────────┬─────────────────┘
+└────────────┬─────────────────┘                         ↓
+             ↓                            ┌──────────────────────────────┐
+┌──────────────────────────────┐         │ Rate Dematching              │
+│ Rate Matching + Interleaving │         │ Input: LLRs                  │
+│ Output: RM bits              │         │ Output: code blocks          │
+└────────────┬─────────────────┘         └────────────┬─────────────────┘
+             ↓                                                    ↓
+┌──────────────────────────────┐         ┌──────────────────────────────┐
+│ Scrambling                   │         │ LDPC decoding                │
+│ Output: RM bits              │         │ (nr_dlsch_decoding.c)        │
+└────────────┬─────────────────┘         │ Output: decoded bits         │
+             ↓                           └────────────┬─────────────────┘
+┌──────────────────────────────┐                      ↓
+│ Modulation: QPSK, 16QAM       │       ┌──────────────────────────────┐
+│ Output: complex symbols (IQ) │       │ CRC CHECK + merge segments    │
+└────────────┬─────────────────┘       │ Output: MAC SDU (bytes)       │
+             ↓                         └──────────────────────────────┘
+┌──────────────────────────────┐
+│ Layer Mapping                │
+│ Output: complex symbols (IQ) │
+└────────────┬─────────────────┘
+             ↓
+┌────────────────────────────────────────┐
+│ Insert DMRS (UE uplink reference signal) │
+│ Output: complex symbols (IQ)             │
+└────────────┬────────────────────────────┘
+             ↓
+┌────────────────────────────────────────┐
+│ DFT-s-OFDM IFFT + CP (ofdm_mod.c)      │
+│ Output: time-domain samples            │
+└────────────┬────────────────────────────┘
+             ↓
+┌──────────────────────────────┐
+│ Simulate channel             │
+│ Input: TX samples            │
+│ Output: RX samples           │
+└──────────────────────────────┘
+```
+
+## openairinterface5g/openair1/PHY
+| Subfolder                      | Function                                               | Notes                                                                 |
+| ------------------------------ | ------------------------------------------------------ | --------------------------------------------------------------------- |
+| `NR_TRANSPORT/`                | 5G NR gNB Transport                                    |                                                                       |
+| `NR_UE_TRANSPORT/`             | UE Transport functions                                 |                                                                       |
+| `NR_REFSIG/`                   | NR reference signal module                             | Includes **DMRS, PTRS, PRACH, SSB** waveform generation and insertion |
+| `MODULATION/`                  | OFDM IFFT/FFT, MODULATION, MAPPING                     |                                                                       |
+| `TOOLS/`                       | Channel estimation, vector ops, FFT tools, phase noise |                                                                       |
+| `INIT/`                        | Layer 1 variable initialization                        | Called in `phy_init_nr_ue()`                                          |
+| `CODING/`                      | LDPC, Polar ENCODING/DECODING, CRC, SEGMENT            |                                                                       |
+| `defs.h`, `extern.h`, `vars.h` | Global definitions and variable references             | Shared across modules, depends on these three files                   |
+
+
+
+
+
+
+
+
+
+
+
+

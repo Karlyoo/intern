@@ -5,7 +5,7 @@
 **Focus**: Digital twins (DTs) and deep learning (DL) for channel state information (CSI) feedback in MIMO systems, with real-world (RW) experiments to assess performance and the role of online learning (OL).
 
 
-## 1. Introduction & Context
+## 1. Introduction 
 - **Objective**: Enhance spectrum efficiency in 5G/6G MIMO systems through accurate CSI feedback, critical for base station (BS) performance.
 - **Challenge**: Traditional codebook-based CSI feedback (e.g., 5G NR Type II) struggles with large-scale MIMO due to high overhead and inefficiency.
 - **Solution**: DL-based CSI feedback, using autoencoders to compress and reconstruct precoding matrices, offers higher accuracy and compatibility with 5G NR.

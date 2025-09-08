@@ -69,14 +69,6 @@ Input: MAC PDU (bytes)                      ┌───────────
 | `CODING/`                      | LDPC, Polar ENCODING/DECODING, CRC, SEGMENT            |                                                                       |
 | `defs.h`, `extern.h`, `vars.h` | Global definitions and variable references             | Shared across modules, depends on these three files                   |
 
-| Function                         | Specification                                                       | OAI Function / File                                                      |
-| -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Channel Estimation**           | TS 38.211 §7.4.1.1 (DM-RS)                                          | `nr_pbch_channel_estimation.c`<br>`nr_pdsch_channel_estimation.c`        |
-| **Demodulation + LLR calculate** | TS 38.211 §7.3.1.4 (modulation)<br>TS 38.212 §7.1.4 (LLR calculate) | `nr_dlsch_llr_computation.c`<br>`nr_qpsk_llr.c`, `nr_qam16_llr.c`        |
-| **Rate Dematching**              | TS 38.212 §5.4.1 (DL)                                               | `nr_rate_matching_ldpc.c`<br>`nr_dlsch_decoding.c`                       |
-| **LDPC decoding**                | TS 38.212 §5.3.2                                                    | `nrLDPC_decoder.c`<br>`ldpc_decode.c`<br>called in `nr_dlsch_decoding.c` |
-| **CRC check + merge Segments**   | TS 38.212 §5.1 (CRC)<br>§5.2.2 (Code block segmentation merge)      | `crc_byte.c`, `check_crc.c`<br>Merged inside `nr_dlsch_decoding.c`       |
-
 ## openair1/PHY/NR_UE_TRANSPORT/ //NR UE transport channel procedures are here
 
 | File name                 | Function                                                                        |
@@ -155,3 +147,13 @@ void nr_pusch_codeword_scrambling_uci(uint8_t *in, uint32_t size, uint32_t Nid, 
    - Map data, DMRS, PTRS to PUSCH resource grid (map_symbols, map_current_symbol). Handles DMRS type (1/2), PTRS position, DC carrier special cases.
 - Precoding and antenna mapping:
    - Apply precoding matrix, map layers to antennas (nr_layer_precoder). Output to freq-domain buffer txdataF.
+
+## UE DOWNLINK
+| Function                         | Specification                                                       | OAI Function / File                                                      |
+| -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Channel Estimation**           | TS 38.211 §7.4.1.1 (DM-RS)                                          | `nr_pbch_channel_estimation.c`<br>`nr_pdsch_channel_estimation.c`        |
+| **Demodulation + LLR calculate** | TS 38.211 §7.3.1.4 (modulation)<br>TS 38.212 §7.1.4 (LLR calculate) | `nr_dlsch_llr_computation.c`<br>`nr_qpsk_llr.c`, `nr_qam16_llr.c`        |
+| **Rate Dematching**              | TS 38.212 §5.4.1 (DL)                                               | `nr_rate_matching_ldpc.c`<br>`nr_dlsch_decoding.c`                       |
+| **LDPC decoding**                | TS 38.212 §5.3.2                                                    | `nrLDPC_decoder.c`<br>`ldpc_decode.c`<br>called in `nr_dlsch_decoding.c` |
+| **CRC check + merge Segments**   | TS 38.212 §5.1 (CRC)<br>§5.2.2 (Code block segmentation merge)      | `crc_byte.c`, `check_crc.c`<br>Merged inside `nr_dlsch_decoding.c`       |
+

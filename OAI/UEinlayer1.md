@@ -105,8 +105,7 @@ Input: MAC PDU (bytes)                      ┌───────────
 | Scrambling         | 38.211 §6.3.1.1          | `nr_pusch_codeword_scrambling()`                  |
 | Modulation         | 38.211 §6.3.2            | `nr_modulation()`                                 |
 | Layer Mapping      | 38.211 §6.3.1.2          | `nr_ue_layer_mapping`                             |
-| Channel Estimation | 38.211 §6.4.1.1.2 (DMRS) | `nr_pbch_channel_estimation()`                    |
-| LLR Calculate      | 38.212 attachment A      | `nr_dlsch_qpsk_llr()`, `nr_dlsch_16qam_llr()` ... |
+| precoding & resource mapping | 38.211 §7.4.1  | `nr_pbch_channel_estimation()`                    |
 
 ## openairinterface5g/openair1/PHY/CODING
 **crc_byte.c**

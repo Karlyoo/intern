@@ -41,6 +41,7 @@ cd ~/openairinterface5g/common/utils/T/tracer/
 make
 ```
 
-And start your connection:
+And start your connection, but i encounter the SCTP problem between gNB and CN5G. I'll deal with it by 
+https://ntust-bmwlab.notion.site/Run-OAI-gNB-CN5G-on-different-machines-15710098314380cd9cddfda1e2ecd185
 
 

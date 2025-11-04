@@ -17,8 +17,61 @@
 
 ---
 
+
+## define SRS in 3GPP NR (TS 38.211 6.4.1.4)
+https://github.com/Karlyoo/LDPCinOAI/blob/main/3GPP%20TR%2038.211.md#6414-srs-sounding-reference-signal
+
+DIRECTION : UE-->gNB
+
+By analyzing the received SRS, the gNodeB can determine the quality of the signal path from the UE to the gNodeB and the amount of interference.
+
+- 1. Frequency Domain: Defines where in the frequency band the SRS is sent.
+  - Comb Structure: The signal is transmitted on a "comb" of subcarriers (e.g., comb-2 or comb-4) to save UE power and allow multiple users to share resources (FDM).
+  - Frequency Hopping: The signal's frequency position can "hop" over time, allowing the gNodeB to measure the entire channel bandwidth.
+- 2. Time Domain: Defines when the SRS is sent.
+  - Periodicity & Offset: How often the signal is repeated (e.g., "every 20 slots") and when it starts.
+  - Symbol Location: Which specific OFDM symbol(s) within a slot are used to carry the SRS (usually the last 1, 2, or 4 symbols).
+- 3. Code Domain: Defines what the signal is and how users are separated.
+  - Base Sequence: Uses a Zadoff-Chu (ZC) sequence. This special sequence has excellent mathematical properties for precise timing measurements and power efficiency.
+  - Cyclic Shift (CS): This is the key to multi-user separation (CDM). Multiple UEs can use the exact same time/frequency resource, but each applies a unique "cyclic shift" to the ZC sequence, allowing the gNodeB to tell them apart.
+- 4. Spatial Domain: Defines which antenna sends the signal.
+  - Antenna Ports: The SRS can be configured to transmit from 1, 2, or 4 different antenna ports on the UE.
+  - Purpose: This is essential for MIMO and beamforming. It allows the gNodeB to measure the unique spatial channel from each UE antenna, enabling it to separate multiple data streams.
+
 ### 🧠 Key Findings from O-RAN E2SM-LLC v1.0
 
+- Its official short name is "ORAN-E2SM-LLC". The specification's scope is to define the E2 interface for interactions with Layer 1 (L1) and Layer 2 (L2) of the RAN.
+- The E2SM-LLC model enables an xApp to interact with the gNodeB (E2 Node) primarily through two services: REPORT and CONTROL.
+  
+**REPORT Service (Monitoring)**
+- The xApp can subscribe to receive reports from the gNodeB.
+- Style 1: Lower Layers Information (LLI) Copy 
+  - This style is used to get a direct copy of L1 signals received from the UE.
+  - The xApp can request the Lower Layers Information Type to be:
+    - SRS: To get the raw Sounding Reference Signal data.
+    - CSI: To get the Channel State Information.
+- Style 2: Lower Layers Measurements 
+  - This style is used to get periodic L2 traffic statistics.
+  - The xApp can request the Lower Layers Measurement Type to include:
+    - DL_RLC_Buffer_Status: Reports the buffer occupancy (how much data is queued) and the "Head of Line" time (how long data has been waiting).
+    - DL_PDCP_Buffer_Status: Provides similar buffer metrics for the PDCP layer.
+    - DL_HARQ_Statistics: Reports the counts of ACK, NACK, and DTX.
+
+**CONTROL Service (Controlling)**
+- The xApp can actively send commands to the gNodeB to control L2 functions.
+- Style 1: Logical Channels Handling Control 
+  - Used to take control of scheduling for specific logical channels.
+  - The xApp can send a list of logical channels to add to its control or release back to the gNodeB's (O-DU's) control.
+- Style 2: Scheduling Parameters Control 
+  - This is the most granular level of control, allowing the xApp to dictate the exact scheduling grant per slot.
+  - The xApp sends a DL Scheduling Control message  that specifies precise L1/L2 parameters, including:
+    - UE ID 
+    - Logical Channel ID and number of bytes to send 
+    - Freq Domain Resources 
+    - Time Domain Resources 
+    - MCS (Modulation and Coding Scheme)
+      
+This style also allows the xApp to send an SRS Request to trigger an aperiodic SRS from the UE.
 #### **1. Lower Layers Information Type (Section 8.3.15)**
 
 * Defines which lower-layer information is triggered or reported.
@@ -54,5 +107,3 @@ Used to specify the PHY-layer signal type in E2 messages.
 
 ---
 
-## define SRS in 3GPP NR (TS 38.211 6.4.1.4)
-https://github.com/Karlyoo/LDPCinOAI/blob/main/3GPP%20TR%2038.211.md#6414-srs-sounding-reference-signal

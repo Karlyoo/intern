@@ -6,7 +6,7 @@
 
 ---
 
-### ✅ Checkpoints and Deadlines
+###  Checkpoints and Deadlines
 
 | Task                                                                     | Description                                                                                                           | Reference                                | Deadline   |
 | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ---------- |
@@ -38,7 +38,7 @@ By analyzing the received SRS, the gNodeB can determine the quality of the signa
   - Antenna Ports: The SRS can be configured to transmit from 1, 2, or 4 different antenna ports on the UE.
   - Purpose: This is essential for MIMO and beamforming. It allows the gNodeB to measure the unique spatial channel from each UE antenna, enabling it to separate multiple data streams.
 
-### 🧠 Key Findings from O-RAN E2SM-LLC v1.0
+###  Key Findings from O-RAN E2SM-LLC v1.0
 
 - Its official short name is "ORAN-E2SM-LLC". The specification's scope is to define the E2 interface for interactions with Layer 1 (L1) and Layer 2 (L2) of the RAN.
 - The E2SM-LLC model enables an xApp to interact with the gNodeB (E2 Node) primarily through two services: REPORT and CONTROL.

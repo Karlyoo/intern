@@ -141,3 +141,33 @@ graph TD
     style E2Node fill:#ff9,stroke:#333,stroke-width:2px
 ```
 
+
+
+## Leveraging Existing Models
+
+At the O-RAN RIC Level (Using the E2 Interface):
+If you want to capture SRS data via an xApp in the Near-RT RIC,you need to send an E2 Subscription Request.
+
+- Core Mechanism: You need to use an E2SM (likely a custom one, as standard KPM might not include raw SRS data) to tell the O-DU: "I need the SRS data for this UE."
+
+- "Command" Form (Pseudocode): This is typically an API call implemented within the xApp's source code.
+```
+# logic inside the xApp
+E2AP_Subscription_Request_t sub_req;
+sub_req.ricRequestID = 1;
+sub_req.ranFunctionID = ID_OF_YOUR_CUSTOM_E2SM_LLC; // Or an E2SM that supports SRS
+sub_req.ricEventTriggerDefinition = TRIGGER_ON_SRS_ARRIVAL; // Trigger when SRS arrives
+sub_req.ricActionDefinition = ACTION_REPORT_SRS_DATA;       // Action is to report SRS data
+
+# Send to E2 Termination
+send_to_e2_node(sub_req);
+```
+- Actual Operation: Once the subscription is successful, the O-DU will continuously push SRS data (which could be the processed channel estimation matrix H, or compressed frequency-domain data) to your xApp via RIC INDICATION messages.
+
+1.From E2SM-KPM (Observation):
+- Adopt: Structures for defining measurement types and reporting formats.
+- Adapt: Shift from aggregated metrics (averages over time) to instantaneous, per-TTI/per-slot indicators (e.g., real-time PRB interference map, specific UE HARQ NACK counts).
+
+2.From E2SM-RC (Control):
+- Adopt: Mechanisms for CONTROL actions, INSERT overrides, and policy-based management.
+- Adapt: Shift from high-level RRM intent (e.g., "optimize throughput") to explicit low-level commands (e.g., "force MCS index 4 for UE X in next slot", "mask PRBs 0-10").

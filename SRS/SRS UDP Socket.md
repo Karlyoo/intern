@@ -20,16 +20,9 @@
 ## 1️⃣ Confirm Physical BBU Environment
 - **Find the BBU Server IP**
   - Ask your administrator or check documentation.
-  - On the BBU server, run:
-    ```bash
-    ifconfig
-    ```
-    
-    or
-    
-    ```bash
-    ip addr show
-    ```
+    - user:`greigns`
+    - Ip address: `192.168.8.128`
+    - passward:`Greigns-2022`
   - Use the **eno2** interface (since `eno1` is reserved for management).
 
 ---
@@ -38,6 +31,27 @@
 ```bash
 ssh <username>@<BBU_IP>
 ```
+```
+======[Main Menu]==================================
+
+        1: RAN Service UP             
+        2: RAN Service DOWN           
+        3: RAN Status Query           
+        4: Reboot or Shutdown RAN 
+        5: Configuration Change       
+        6: SW Package Update          
+        7: More Information           
+
+===================================================
+Input your choice(1-7): 
+
+Current 5G System Status: 
+  5GC:               OK
+  L1:                OK   ( O-RU lost - [0] 72; )
+  RAN:               OK
+  Uptime:            00:02:00 ( 120 seconds )
+```
+
 ## 3️⃣ Modify BBU Configuration File
 Open the configuration file and set:
 ```

@@ -84,6 +84,11 @@ cd /<your path>/srs_udp_log_reader
 ```
 Output:
 
+```
+SRS UDP Log Reader Sample [Press Ctrl-C to Quit]
+Waiting for SRS UDP log on port 2498 ...
+```
+
 Logs displayed in console.
 
 File srs_udp_log.log created in the same folder.

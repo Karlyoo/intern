@@ -159,15 +159,14 @@ python src/inference/run_spikingrx_on_oai_dump.py
 # 如果要和oai比較
 新的完整工作流程：
 
-1.重新編譯 OAI：在修改完 C 程式碼後，重新編譯 nr-uesoftmodem。
-執行 OAI：sudo ./nr-uesoftmodem ...
+1.執行 OAI：sudo ./nr-uesoftmodem ...
 當 UE 接收到 PDSCH，nr_dlsch_demodulation.c 中的程式碼會執行，產生 /tmp/spx_fullgrid_f...bin 檔案。
 
 2.執行 Python：python3 run_spikingrx_on_oai_dump.py
-您的腳本會找到最新的 spx_fullgrid_...bin 檔案，用它來進行模型推論。
+找到最新的 spx_fullgrid_...bin 檔案，進行模型推論。
 推論完成後，它會產生一個新的 LLR 檔案 /tmp/spx_llrs_f...bin。
 
 3.OAI 繼續執行：
 OAI 的處理流程繼續往下走，呼叫到 nr_dlsch_decoding 函式。
-我們剛剛加入的程式碼會偵測到 /tmp/spx_llrs_f...bin 檔案的存在，於是讀取它，並用模型產生的 LLR 來進行 LDPC 解碼。
+偵測到 /tmp/spx_llrs_f...bin 檔案的存在，於是讀取它，並用模型產生的 LLR 來進行 LDPC 解碼。
 

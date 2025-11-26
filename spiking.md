@@ -170,3 +170,20 @@ python src/inference/run_spikingrx_on_oai_dump.py
 OAI 的處理流程繼續往下走，呼叫到 nr_dlsch_decoding 函式。
 偵測到 /tmp/spx_llrs_f...bin 檔案的存在，於是讀取它，並用模型產生的 LLR 來進行 LDPC 解碼。
 
+遇到時間問題：
+目前的簡易流程：
+
+OAI 存一個 IQ 檔。
+Python 腳本處理最新的 IQ 檔，存一個 LLR 檔。
+OAI 讀取對應的 LLR 檔。
+這裡的「最新」和「對應」就是問題所在。如果 Python 處理得不夠快，或者 OAI 產生了多個 PDSCH 的 IQ 檔，整個流程就會錯亂。
+
+解決方案：使用唯一的識別碼進行標記
+要解決這個問題，我們必須為每一次 PDSCH 的傳輸嘗試建立一個唯一的標記。在 5G NR 中，最適合的唯一識別碼組合是：
+
+Frame (訊框號)
+Slot (時槽號)
+HARQ Process ID (HARQ 流程 ID)
+HARQ ID 至關重要，因為在同一個 slot 中，可能會有多個 HARQ process 在運作；而且對於同一個 HARQ process，還可能會有多次重傳 (retransmission)。
+
+我們需要將這個唯一的 (frame, slot, harq_pid) 標記應用到整個鏈路的所有檔名中。

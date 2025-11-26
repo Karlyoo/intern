@@ -85,47 +85,47 @@ graph TD
     classDef file fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,stroke-dasharray: 5 5;
     classDef data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
 
-    subgraph Step_E [Step E: first Forward Inference]
+    subgraph Step_1 [Step 1: first Forward Inference]
         direction TB
-        E_Env[1.  source .venv]
-        E_Run[2. run inference script]:::script
-        E_Input(read OAI Dump /tmp/):::data
-        E_Out(output src/inference/out/):::file
+        1_Env[1.  source .venv]
+        1_Run[2. run inference script]:::script
+        1_Input(read OAI Dump /tmp/):::data
+        1_Out(output src/inference/out/):::file
         
-        E_Env --> E_Run
-        E_Input --> E_Run
-        E_Run -->|" 32x32 -> Forward"| E_Out
+        1_Env --> 1_Run
+        1_Input --> 1_Run
+        1_Run -->|" 32x32 -> Forward"| 1_Out
     end
 
-    subgraph Step_F [Step F: model Training]
+    subgraph Step_2 [Step 2: model Training]
         direction TB
-        F_Run[ train_spikingrx.py]:::script
-        F_Log( Log: docs/results/train/):::file
-        F_Ckpt(save: checkpoints/spikingrx_checkpoint.pth):::data
+        2_Run[ train_spikingrx.py]:::script
+        2_Log( Log: docs/results/train/):::file
+        2_Ckpt(save: checkpoints/spikingrx_checkpoint.pth):::data
 
-        F_Run --> F_Log
-        F_Run --> F_Ckpt
+        2_Run --> 2_Log
+        2_Run --> 2_Ckpt
     end
 
-    subgraph Step_G [Step G: Re-Inference after training]
+    subgraph Step_3 [Step 3: Re-Inference after training]
         direction TB
-        G_Run[run inference script]:::script
-        G_Out(Update output results):::file
+        3_Run[run inference script]:::script
+        3_Out(Update output results):::file
 
-        G_Run --> G_Out
+        3_Run --> 3_Out
     end
 
     %% 流程連接
-    Step_E --> Step_F
-    Step_F --> Step_G
+    Step_1 --> Step_2
+    Step_2 --> Step_3
 
     %% 關鍵數據流：訓練好的權重被 G 步驟讀取
-    F_Ckpt -.->|" Checkpoint"| G_Run
+    2_Ckpt -.->|" Checkpoint"| 3_Run
 
     %% 引用標註
-    %% Step E [cite: 34-39]
-    %% Step F [cite: 45-53]
-    %% Step G [cite: 54-57]
+    %% Step 1 [cite: 34-39]
+    %% Step 2 [cite: 45-53]
+    %% Step 3 [cite: 54-57]
 ```
 
 ```

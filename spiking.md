@@ -107,7 +107,7 @@ graph TD
         2_Run --> 2_Ckpt
     end
 
-    subgraph Step_3 [Step 3: Re-Inference after training]
+    subgraph Step_3 [Step 3: Re-Inference ]
         direction TB
         3_Run[run inference script]:::script
         3_Out(Update output results):::file

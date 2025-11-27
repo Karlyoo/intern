@@ -187,3 +187,104 @@ HARQ Process ID (HARQ 流程 ID)
 HARQ ID 至關重要，因為在同一個 slot 中，可能會有多個 HARQ process 在運作；而且對於同一個 HARQ process，還可能會有多次重傳 (retransmission)。
 
 我們需要將這個唯一的 (frame, slot, harq_pid) 標記應用到整個鏈路的所有檔名中。
+
+#### (nr_dlsch_demodulation.c) 檔名加入HARQ ID
+```
+// ...existing code...
+    if (dlsch0) {
+      const uint16_t n_sym = pdsch_config->dl_dmrs_symb_pos.num_pdsch_symbols;
+// ...existing code...
+      for (int i_ant = 0; i_ant < phy_vars_ue->frame_parms.nb_antennas_rx; ++i_ant) {
+        char filename[256];
+        // 在檔名中加入 harq_pid
+        sprintf(filename, "/tmp/spx_fullgrid_f%d_s%d_harq%d.bin", proc->frame_rx, proc->slot_rx, harq_pid);
+
+        FILE *fp = fopen(filename, "wb");
+        if (fp) {
+// ...existing code...
+          header[5] = (uint16_t)i_ant;
+          // 您的 Python 腳本已經將 header[6] 作為 cw (codeword) ID，這通常就是 harq_pid
+          header[6] = (uint16_t)harq_pid; 
+          header[7] = 0; // reserved
+          fwrite(header, sizeof(uint16_t), 8, fp);
+// ...existing code...
+```
+
+#### 修改LLR 儲存 (run_spikingrx_on_oai_dump.py)
+```
+Python 從讀取的 IQ 的head中解析出 (frame, slot, harq_pid)
+// ...existing code...
+def main():
+    # ... (解析參數) ...
+
+    # 1. 載入最新的 IQ dump
+    #    修改 pattern 以匹配新的檔名格式
+    try:
+        x, meta = load_latest_fullgrid(
+            pattern="/tmp/spx_fullgrid_f*_s*_harq*.bin",
+            device=device
+        )
+        print(f"Processing dump: {meta['path']}")
+    except FileNotFoundError:
+        print("No OAI dump file found. Exiting.")
+        return
+
+    # ... (載入模型) ...
+
+    # 2. 模型推論
+    print("Running SpikingRx model inference...")
+    with torch.no_grad():
+        llrs_tensor = model(x)
+    print(f"Inference complete. Output tensor shape: {llrs_tensor.shape}")
+
+    # 3. 將 LLR 存檔，使用從 meta 中讀取的唯一識別碼
+    llrs_numpy = llrs_tensor.cpu().numpy().flatten()
+    scaling_factor = 8.0
+    llrs_int16 = (llrs_numpy * scaling_factor).astype(np.int16)
+
+    # 使用 meta['frame'], meta['slot'], 和 meta['cw'] (即 harq_pid) 來建立檔名
+    frame_id = meta['frame']
+    slot_id = meta['slot']
+    harq_id = meta['cw'] # 根據 oai_to_spikingrx_tensor.py, header[6] 被解析為 'cw'
+
+    output_path = f"/tmp/spx_llrs_f{frame_id}_s{slot_id}_harq{harq_id}.bin"
+    
+    llrs_int16.tofile(output_path)
+    print(f"Saved {len(llrs_int16)} LLRs for OAI to: {output_path}")
+
+if __name__ == "__main__":
+    main()
+// ...existing code...
+```
+
+#### 修改LLR 讀取 (nr_dlsch_decoding.c)
+讓解碼函式根據當前正在處理的 (frame, slot, harq_pid) 去尋找對應的 LLR 檔案。
+```
+// ...existing code...
+  t_nrLDPC_dec_params decParams;
+  decParams.check_crc = check_crc;
+
+  // Karl's code: Load LLRs from SpikingRx model output using unique identifier
+  {
+    char llr_filename[256];
+    // 使用 frame, nr_slot_rx, 和 harq_pid 來尋找精確的 LLR 檔案
+    sprintf(llr_filename, "/tmp/spx_llrs_f%d_s%d_harq%d.bin", frame, nr_slot_rx, harq_pid);
+    FILE *fp = fopen(llr_filename, "rb");
+    if (fp != NULL) {
+// ...existing code...
+      if (items_read == G) {
+        LOG_I(PHY, "[SpikingRx] Successfully loaded %zu LLRs from %s\n", items_read, llr_filename);
+        // 讀取成功後立即刪除檔案，避免被下一次重傳誤用
+        remove(llr_filename); 
+      } else {
+// ...existing code...
+      }
+    } else {
+      // File does not exist, proceed with OAI's internal LLRs
+      LOG_D(PHY, "[SpikingRx] LLR file %s not found. Using OAI LLRs.\n", llr_filename);
+    }
+  }
+
+  if (!harq_process) {
+// ...existing code...
+```

@@ -29,19 +29,19 @@ The technology is broadly applied across four categories:
 ### RSSI detection(a simple test)
 ```mermaid
 graph TD
-    subgraph TX_SETUP[發射器 - TX]
-        A[筆記型電腦] --> B{開啟熱點}
-        B --> C[設定唯一SSID]
-        C --> D[固定位置]
+    subgraph TX_SETUP[transmittor - TX]
+        A[wifi share] --> B{hot spot}
+        B --> C[the only SSID]
+        C --> D[same position]
     end
 
-    subgraph RX_SETUP[接收器 - RX]
-        E[平板或iPhone] --> F{連接熱點}
-        F --> G[安裝RSSI工具]
-        G --> H[固定位置]
+    subgraph RX_SETUP[receiver - RX]
+        E[laptop or iphone] --> F{connection hot spot}
+        F --> G[RSSI tool]
+        G --> H[same position]
     end
 
-    D --> K[測量準備完成]
+    D --> K[end]
     H --> K
 
     style A fill:#aaffcc,stroke:#333
@@ -52,11 +52,11 @@ graph TD
 ```
 #!/bin/bash
 
-# --- 參數設定 ---
-INTERFACE="wlp1s0"  # 您的無線網卡介面名稱
+# --- config setting ---
+INTERFACE="wlp1s0" 
 BSSID="78:44:76:dc:ef:08"
-OUTPUT_FILE=""     # 輸出檔案名稱將在運行時設定
-INTERVAL=0.1       # 數據採集間隔，1 秒 (1 Hz)
+OUTPUT_FILE=""     
+INTERVAL=0.1      
 # -----------------
 
 if [ -z "$1" ]; then
@@ -65,7 +65,7 @@ if [ -z "$1" ]; then
 fi
 
 OUTPUT_FILE="$1"
-DURATION=${2:-0} # 如果未指定秒數，則設為 0 (無限)
+DURATION=${2:-0} 
 
 echo "Timestamp,RSSI_dBm" > "$OUTPUT_FILE"
 echo "開始記錄 RSSI 數據到 $OUTPUT_FILE..."
@@ -73,7 +73,6 @@ START_TIME=$(date +%s)
 
 while true
 do
-    # 檢查是否達到設定的持續時間
     if [ "$DURATION" -gt 0 ]; then
         CURRENT_TIME=$(date +%s)
 ELAPSED=$((CURRENT_TIME - START_TIME))
@@ -82,10 +81,9 @@ ELAPSED=$((CURRENT_TIME - START_TIME))
         fi
     fi
 
-    # 擷取 RSSI 數據
+    # get RSSI data
     RSSI=$(sudo iw dev "$INTERFACE" link 2>/dev/null | grep "signal:" | awk '{p>
     
-    # 檢查是否成功擷取 RSSI
     if [ ! -z "$RSSI" ]; then
         TIMESTAMP=$(date +%s)
         echo "$TIMESTAMP,$RSSI" >> "$OUTPUT_FILE"

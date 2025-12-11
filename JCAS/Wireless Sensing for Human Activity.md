@@ -103,9 +103,39 @@ echo "數據採集結束。"
 <img width="979" height="295" alt="image" src="https://github.com/user-attachments/assets/267c8dfe-2260-4553-9e35-db61c430f4fb" />
 
 ### CSI detection
-Based on this theis,CSI detection require profession SDR equipment.
-
 CSI provides more fine-grained channel information (i.e., both amplitude and phase information)with multiple subcarriers.
+
+Based on this theis,CSI detection require profession SDR equipment.
 
 But in OAI,we can generate 5G CSI , then detect whether the CSI changes.
 If the CSI changes significantly, interpret it as an event such as human movement or presence.
+
+1.dump
+we need to find `void nr_pusch_channel_estimation` to get the CSI.
+```
+#include <stdio.h>
+static FILE *fp_h = NULL;
+```
+```
+# open a file to store the data
+if (fp_h == NULL) {
+    fp_h = fopen("/tmp/h_est_dump.csv", "w");
+}
+```
+
+```
+# Write the file where H_est is estimated.
+fprintf(fp_h, "%d,%d,%f,%f\n",
+        ant, k,
+        creal(H_est[ant][k]),
+        cimag(H_est[ant][k])
+);
+```
+
+```
+#rerun the OAI code
+source oaienv
+cd cmake_targets/
+./build_oai --gNB --nrUE -w SIMU
+
+```

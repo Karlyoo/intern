@@ -106,3 +106,6 @@ echo "數據採集結束。"
 Based on this theis,CSI detection require profession SDR equipment.
 
 CSI provides more fine-grained channel information (i.e., both amplitude and phase information)with multiple subcarriers.
+
+But in OAI,we can generate 5G CSI , then detect whether the CSI changes.
+If the CSI changes significantly, interpret it as an event such as human movement or presence.

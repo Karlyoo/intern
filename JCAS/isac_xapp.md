@@ -1,6 +1,6 @@
 # ISAC Xapp
 
-✅ action item: from 玠君學姐 
+✅ action item: from chei-chun 
 -
 - trace the code in both oai and Flexric 
 - the newest version of FlexRIC.——> it needs the private repository,requires Eurecom Gitlab account.

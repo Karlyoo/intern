@@ -3,7 +3,7 @@
 ✅ action item: from chei-chun 
 -
 - trace the code in both oai and Flexric 
-- the newest version of FlexRIC.——> it needs the private repository,requires Eurecom Gitlab account.
+- the newest version of FlexRIC for ISAC function .——> it needs the private repository,requires Eurecom Gitlab account.
   
 ref:https://bubbleran.com/docs/devops-guide/flexric/developers-guide/xapp/xapp-programming/usr
 

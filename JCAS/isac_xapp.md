@@ -1,8 +1,15 @@
 # ISAC Xapp
+
+✅ action item: from 玠君學姐 
+-
+- trace the code in both oai and Flexric 
+- the newest version of FlexRIC.——> it needs the private repository,requires Eurecom Gitlab account.
+  
 ref:https://bubbleran.com/docs/devops-guide/flexric/developers-guide/xapp/xapp-programming/usr
 
 https://bubbleran.com/docs/user-guide/xapp-training/lab10
 
+https://docs.google.com/presentation/d/1N7rEccMr3gYtHP5ud3Wo_UydceQRh-IQ/edit?slide=id.g33d3e013c19_0_27#slide=id.g33d3e013c19_0_27
 ```mermaid
 graph LR
     %% --- 設定樣式 (讓圖比較緊湊) ---
@@ -213,7 +220,7 @@ int main(int argc, char *argv[])
 ```
 However the public FlexRIC doesn't have`isac_sm` and it require physical equipment to get correct data.
 
-I try to fix `kpm_sm` to familiar with the xapp deployment workflow. 
+I try to fix `srs_sm` to familiar with the xapp deployment workflow. 
 ```
 #include "xapp_infra.h"
 #include "lib/flexric.h"

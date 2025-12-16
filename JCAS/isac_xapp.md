@@ -15,43 +15,61 @@ REF:
 
 ## Flow between oai-gnb and flexRIC 
 ```mermaid
+graph BT
 
-    graph TD
-    %% --- Nodes Definition ---
-    UE(User Equipment<br/>OAI nr-uesoftmodem)
+%% =========================
+%% Bottom: RAN Layer
+%% =========================
+subgraph RAN_Layer [Radio Access Network]
+    UE[User Equipment]
     RF((RF Simulator))
-    
-    subgraph RAN_Layer [Radio Access Network]
-        gNB(gNB Base Station<br/>OAI nr-softmodem)
-        Agent[E2 Agent<br/>Fix: Port 36421]
-    end
 
-    subgraph RIC_Layer [RIC Platform]
-        RIC(FlexRIC<br/>Near-RT RIC)
-        DB[(SDL Database<br/>SQLite)]
-    end
+    gNB[gNB Base Station
+        <br/>OAI nr softmodem
+        <br/>PHY
+        <br/>MAC
+        <br/>RLC
+        <br/>E2 Agent]
+end
 
-    subgraph App_Layer [xApps]
-        Monitor[Monitor xApp<br/>KPM/MAC Stats]
-        ISAC[Custom ISAC xApp<br/>BubbleRAN Code]
-    end
+%% =========================
+%% Middle: RIC Layer
+%% =========================
+subgraph RIC_Layer [Near RT RIC Platform]
+    RIC[FlexRIC Near RT RIC]
+    DB[(SDL Database)]
+end
 
-    %% --- Connections ---
-    UE <==>|Traffic Generation| RF
-    RF <==>|Radio Link| gNB
-    
-    gNB --- Agent
-    Agent <==>|E2 Interface<br/>SCTP 36421| RIC
-    
-    RIC <-->|E42 Protocol| Monitor
-    RIC <-->|E42 Protocol| ISAC
-    RIC --- DB
+%% =========================
+%% Top: xApp Layer
+%% =========================
+subgraph App_Layer [xApps]
+    Monitor[Monitor xApp]
+    ISAC[Custom ISAC xApp]
+end
 
-    %% --- Styling ---
-    style Agent fill:#ffcccc,stroke:#cc0000,stroke-width:2px
-    style RF fill:#ffffcc,stroke:#aaaa00
-    style Monitor fill:#e1f5fe
-    style ISAC fill:#e1f5fe
+%% =========================
+%% Connections
+%% =========================
+UE --> RF
+RF --> gNB
+
+gNB --> RIC
+
+RIC --> Monitor
+RIC --> ISAC
+
+RIC --> DB
+
+%% =========================
+%% Styling
+%% =========================
+style gNB fill:#ffcccc,stroke:#cc0000,stroke-width:2px
+style Monitor fill:#e1f5fe
+style ISAC fill:#e1f5fe
+
+
+
 ```
 
 ##  FlexRIC

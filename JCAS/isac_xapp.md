@@ -5,61 +5,15 @@
 - trace the code in both oai and Flexric 
 - the newest version of FlexRIC for ISAC function .——> it needs the private repository,requires Eurecom Gitlab account.
   
-ref:https://bubbleran.com/docs/devops-guide/flexric/developers-guide/xapp/xapp-programming/usr
+REF:
 
-https://bubbleran.com/docs/user-guide/xapp-training/lab10
+[bubble ran xapp-programing](https://bubbleran.com/docs/devops-guide/flexric/developers-guide/xapp/xapp-programming/usr)
 
-https://docs.google.com/presentation/d/1N7rEccMr3gYtHP5ud3Wo_UydceQRh-IQ/edit?slide=id.g33d3e013c19_0_27#slide=id.g33d3e013c19_0_27
-```mermaid
-graph LR
-    %% --- 設定樣式 (讓圖比較緊湊) ---
-    classDef hardware fill:#fff9c4,stroke:#fbc02d,stroke-width:5px;
-    classDef software fill:#e1f5fe,stroke:#0277bd,stroke-width:5px;
-    classDef highlight fill:#c8e6c9,stroke:#2e7d32,stroke-width:5px;
-    classDef signal fill:#ffcdd2,stroke:#c62828,stroke-width:5px;
+[bubble ran xapp-train-lab10 : isac](https://bubbleran.com/docs/user-guide/xapp-training/lab10)
 
-    %% --- 1. 硬體端 (Hardware) ---
-    subgraph HW_Layer ["Physical & Hardware"]
-        direction LR
-        Wave(("Radio Waves")):::signal
-        Antenna["Antenna"]:::hardware
-        USRP["USRP (ADC)"]:::hardware
-    end
+[behining the ISAC](https://docs.google.com/presentation/d/1N7rEccMr3gYtHP5ud3Wo_UydceQRh-IQ/edit?slide=id.g33d3e013c19_0_27#slide=id.g33d3e013c19_0_27)
 
-    %% --- 2. 軟體端 (OAI gNB) ---
-    subgraph OAI_Layer ["OAI gNB Stack"]
-        direction TB
-        PHY["PHY Layer (L1)<br>(FFT/CSI)"]:::software
-        MAC["MAC Layer (L2)"]:::software
-        Agent["E2 Agent"]:::highlight
-    end
-
-    %% --- 3. 控制端 (RIC) ---
-    subgraph RIC_Layer ["RIC & xApp"]
-        direction LR
-        RIC["FlexRIC"]:::software
-        xApp["ISAC xApp"]:::highlight
-    end
-
-    %% --- 連線流向 ---
-    %% 硬體流
-    Wave --> Antenna
-    Antenna --> USRP
-    USRP == "I/Q Samples" ==> PHY
-
-    %% 軟體處理流
-    PHY --> MAC
-    
-    %% 關鍵攔截點 (JCAS)
-    PHY -. "Tap: CSI/Radar" .-> Agent
-    MAC -. "Tap: Stats" .-> Agent
-
-    %% E2 傳輸
-    Agent == "E2AP (Port 36421)" ==> RIC
-    RIC == "E42 Protocol" ==> xApp
-```
-
-
+## Flow between oai-gnb and flexRIC 
 ```mermaid
 
     graph TD
@@ -101,6 +55,9 @@ graph LR
 ```
 
 ##  FlexRIC
+```
+:~/flexric/build/examples/ric$ ./nearRT-RIC
+```
 confirm the message can go through from gnb to flexRIC
 ```
 [iApp]: nearRT-RIC IP Address = 127.0.0.1, PORT = 36422
@@ -125,6 +82,53 @@ confirm the message can go through from gnb to flexRIC
 ```
 
 ## Monitor Xapp
+I use the monitor xapp to familiar with the subscription and indication part.
+
+The Monitor xApp (xapp_gtp_mac_rlc_pdcp_moni) is the standard reference application in FlexRIC. It serves as a "dashboard" for the RAN, simultaneously subscribing to multiple protocol layers (MAC, RLC, PDCP, GTP) to gather real-time statistics.
+```mermaid
+sequenceDiagram
+    autonumber
+    %% Define Participants
+    participant xApp as Monitor xApp<br>(Client)
+    participant RIC as FlexRIC<br>(Server)
+    participant Agent as E2 Agent<br>(gNB)
+
+    %% --- Phase 1: Subscription Setup ---
+    Note over xApp, Agent: 🟢 Phase 1: Subscription Setup (One-time Handshake)
+    
+    xApp->>RIC: E42 Subscription Request<br/>(Target: MAC Layer, SM ID=142, Interval=10ms)
+    
+    Note right of RIC: RIC validates ID &<br/>translates message
+    
+    RIC->>Agent: E2AP Subscription Request<br/>(Forward to gNB)
+    
+    Agent-->>Agent: Internal Config: Start Timer<br/>(Bind to MAC data source)
+    
+    Agent-->>RIC: E2AP Subscription Response<br/>(Success / Failure)
+    
+    RIC-->>xApp: E42 Subscription Response<br/>(Subscription Handle ID = 1)
+
+    %% --- Phase 2: Indication Loop ---
+    Note over xApp, Agent: 🔵 Phase 2: Indication Loop (Continuous Reporting)
+    
+    loop Every 10ms (or Event Trigger)
+        Agent-->>Agent: 📸 Data Snapshot<br/>(Capture MAC Throughput/Buffer)
+        
+        Agent->>RIC: E2AP Indication Message<br/>(Encoded ASN.1 Data)
+        
+        RIC->>xApp: E42 Indication Message<br/>(Forward via IPC/Socket)
+        
+        activate xApp
+        xApp-->>xApp: ⚡ Trigger my_callback()<br/>Parse Data -> Log -> Calculate Latency
+        deactivate xApp
+    end
+
+    %% --- Phase 3: Termination ---
+    Note over xApp, Agent: 🔴 Phase 3: Termination (Cleanup)
+    xApp->>RIC: Subscription Delete Request
+    RIC->>Agent: Stop Reporting
+    Agent-->>Agent: Stop Timer
+```
 check the status and calculate the latency . 
 ```
  Registered node 0 ran func id = 146 
@@ -219,64 +223,3 @@ int main(int argc, char *argv[])
 }
 ```
 However the public FlexRIC doesn't have`isac_sm` and it require physical equipment to get correct data.
-
-I try to fix `srs_sm` to familiar with the xapp deployment workflow. 
-```
-#include "xapp_infra.h"
-#include "lib/flexric.h"
-#include "sm/kpm_sm/kpm_sm_id.h" // Switched to KPM
-
-// This is the Callback; it will be called when the RIC receives data
-void my_callback(sm_ag_if_rd_t const* rd)
-{
-    // Check if it is KPM data
-    if (rd->type == INDICATION_MSG_AGENT_IF_ANS_V0 && rd->ind.type == KPM_STATS_V3_0) {
-        printf("[Mock ISAC] Data received! (It's KPM, but the flow is correct)\n");
-        
-        // Here we simulate reading ISAC data
-        // In real ISAC code, you would access: msg->distance, msg->angle
-        // Here we are just proving that the callback was triggered
-        
-        // Simply print a timestamp to prove it is alive
-        int64_t now = time_now_us();
-        printf(" >> Timestamp: %ld \n", now);
-    }
-}
-
-int main(int argc, char* argv[])
-{
-    // 1. Initialization (Exactly the same as Lab 10)
-    fr_args_t args = init_fr_args(argc, argv);
-    init_xapp_api(&args);
-    sleep(1);
-
-    // 2. Connection Check
-    e2_node_connected_t* nodes = get_e2_node_connected();
-    if (nodes->len > 0) {
-        printf("[Mock ISAC] Connected to gNB, preparing to subscribe...\n");
-
-        // 3. Subscription Setup (Switched ISAC ID to KPM ID)
-        // In the future when you have ISAC code, just change this to SM_ISAC_ID
-        const int sm_id = SM_KPM_ID; 
-
-        inter_xapp_e2_sub_req_t req = {0};
-        req.net.id = nodes->n[0].id;
-        
-        // KPM requires a simple Action Definition (this part is slightly more complex than ISAC, but we use default values)
-        sm_io_ag_ran_func_def_t func_def = {0};
-
-        // Send subscription!
-        subscribe_xapp_sm(sm_id, &req, &func_def, my_callback);
-        printf("[Mock ISAC] Subscription request sent!\n");
-    } else {
-        printf("[Mock ISAC] Error: No gNB found!\n");
-    }
-
-    // 4. Wait for data (Exactly the same as Lab 10)
-    while(1) {
-        sleep(1);
-    }
-
-    return 0;
-}
-```
